@@ -1,0 +1,66 @@
+.__init__ {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.__init__title {
+  font-size: 2.5vmin;
+  padding: 1.5vmin;
+  font-weight: bold;
+  font-family: 'system-ui';
+}
+
+.__init__image {
+  height: 20vmin;
+  width: 20vmin;
+  background-size: 100% 100%;
+  margin-bottom: 4vmin;
+  overflow: hidden;
+  transform: translateY(-10000px);
+  filter: drop-shadow(0px 10000px #d2b1db);
+}
+
+.__init__image img {
+  height: 100%;
+  width: 100%;
+}
+
+.__init__process-frame {
+  width: 33%;
+  height: 2.4vmin;
+  border-radius: 1.2vmin;
+  overflow: hidden;
+}
+
+.__init__progress {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(-45deg, #c296cd 36%, #dfcde6 28%, #dfcde6 67%, #c296cd 25%);
+  background-size: 4em 2em;
+  animation: __init__load 1s;
+  position: relative;
+}
+
+.__init__masker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  opacity: 0.8;
+  background: linear-gradient(90deg, #a480ab 20%, #fff 100%);
+}
+
+@keyframes __init__load {
+  0% {
+    width: 0;
+  }
+}
