@@ -44,7 +44,7 @@ import { reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBasicStore } from '@/store/basic'
 import { elMessage, useElement } from '@/hooks/use-element'
-import { loginReq } from '@/api/user'
+import { login } from '@/api/user'
 /* listen router change and set the query  */
 const { settings } = useBasicStore()
 //element valid
@@ -96,7 +96,7 @@ const router = useRouter()
 const basicStore = useBasicStore()
 
 const loginFunc = () => {
-  loginReq(subForm)
+  login(subForm)
     .then(({ data }) => {
       elMessage('登录成功')
       basicStore.setToken(data?.jwtToken)

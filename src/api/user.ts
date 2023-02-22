@@ -1,31 +1,27 @@
 //获取用户信息
-import axiosReq from '@/utils/axios-req'
-export const userInfoReq = (): Promise<any> => {
-  return new Promise((resolve) => {
-    const reqConfig = {
-      url: '/basis-func/user/getUserInfo',
-      params: { plateFormId: 2 },
-      method: 'post'
-    }
-    axiosReq(reqConfig).then(({ data }) => {
-      resolve(data)
-    })
-  })
+import request from '@/utils/request'
+export async function getUserInfo(): Promise<any> {
+  const reqConfig = {
+    url: '/userInfo',
+    params: { plateFormId: 2 },
+    method: 'post'
+  }
+  return request(reqConfig).then((it) => it.data)
 }
 
 //登录
-export const loginReq = (subForm) => {
-  return axiosReq({
-    url: '/basis-func/user/loginValid',
+export async function login(subForm) {
+  return request({
+    url: '/login',
     params: subForm,
     method: 'post'
   })
 }
 
 //退出登录
-export const loginOutReq = () => {
-  return axiosReq({
-    url: '/basis-func/user/loginValid',
+export async function logout() {
+  return request({
+    url: '/logout',
     method: 'post'
   })
 }

@@ -58,7 +58,7 @@ service.interceptors.response.use(
   }
 )
 //导出service实例给页面调用 , config->页面的配置
-export default function axiosReq(config) {
+export default function request(config) {
   return service({
     baseURL: import.meta.env.VITE_APP_BASE_URL,
     timeout: 8000,

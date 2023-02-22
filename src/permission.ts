@@ -1,7 +1,7 @@
 import router from '@/router'
 import { filterAsyncRouter, progressClose, progressStart } from '@/hooks/use-permission'
 import { useBasicStore } from '@/store/basic'
-import { userInfoReq } from '@/api/user'
+import { getUserInfo } from '@/api/user'
 import { langTitle } from '@/hooks/use-common'
 
 //路由进入前拦截
@@ -19,7 +19,7 @@ router.beforeEach(async (to) => {
       //2.判断是否获取用户信息
       if (!basicStore.getUserInfo) {
         try {
-          const userData = await userInfoReq()
+          const userData = await getUserInfo()
           //3.动态路由权限筛选
           filterAsyncRouter(userData)
           //4.保存用户信息到store

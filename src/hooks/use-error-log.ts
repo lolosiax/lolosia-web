@@ -3,10 +3,10 @@ import { jsErrorCollection } from 'js-error-collection'
 import pack from '../../package.json'
 import settings from '@/settings'
 import bus from '@/utils/bus'
-import axiosReq from '@/utils/axios-req'
+import request from '@/utils/request'
 const reqUrl = '/integration-front/errorCollection/insert'
 const errorLogReq = (errLog: string) => {
-  axiosReq({
+  request({
     url: reqUrl,
     data: {
       pageUrl: window.location.href,
