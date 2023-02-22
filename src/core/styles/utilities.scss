@@ -1,0 +1,134 @@
+/* flex 速记：row|column + justify(S/B/A/C) + align(S/C/E) */
+.rowSS,
+.rowSC,
+.rowSE,
+.rowBS,
+.rowBC,
+.rowBE,
+.rowAS,
+.rowAC,
+.rowAE,
+.rowCS,
+.rowCC,
+.rowCE {
+  display: flex;
+  flex-direction: row;
+}
+
+.columnSS,
+.columnSC,
+.columnSE,
+.columnBS,
+.columnBC,
+.columnBE,
+.columnAS,
+.columnAC,
+.columnAE,
+.columnCS,
+.columnCC,
+.columnCE {
+  display: flex;
+  flex-direction: column;
+}
+
+.rowSS,
+.columnSS {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.rowSC,
+.columnSC {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.rowSE,
+.columnSE {
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+.rowBS,
+.columnBS {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.rowBC,
+.columnBC {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rowBE,
+.columnBE {
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.rowAS,
+.columnAS {
+  justify-content: space-around;
+  align-items: flex-start;
+}
+
+.rowAC,
+.columnAC {
+  justify-content: space-around;
+  align-items: center;
+}
+
+.rowAE,
+.columnAE {
+  justify-content: space-around;
+  align-items: flex-end;
+}
+
+.rowCS,
+.columnCS {
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.rowCC,
+.columnCC {
+  justify-content: center;
+  align-items: center;
+}
+
+.rowCE,
+.columnCE {
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* 居中定位 */
+.center-50,
+.fixed-center-50 {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.center-50 {
+  position: absolute;
+}
+
+.fixed-center-50 {
+  position: fixed;
+}
+
+/* 表格操作栏 */
+.btn-click-style,
+.table-operation-btn span {
+  cursor: pointer;
+  color: #477ef5;
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

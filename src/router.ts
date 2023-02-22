@@ -1,0 +1,35 @@
+import type { RouteRecordRaw } from 'vue-router'
+import { catchAllRoute, createAppRouter, errorRoutes, layoutRoute } from '@/core/router'
+import { registerRouteComponents } from '@/core/router/component-registry'
+import { dashboardRoutes } from '@/modules/dashboard/routes'
+
+/**
+ * 应用路由组合根。
+ *
+ * core 只提供「建路由 / 守卫 / 布局壳」的机制，具体页面由这里拼进来，
+ * 保证依赖方向始终是 modules → core。
+ */
+
+/** 后端菜单如果下发 component 字符串，按这张表解析；未登记会直接报错。 */
+registerRouteComponents({
+  'dashboard/index': () => import('@/modules/dashboard/pages/DashboardPage.vue')
+})
+
+/** 布局内的一级菜单（侧栏直接渲染这一层）。 */
+export const menuRoutes: RouteRecordRaw[] = [...dashboardRoutes()]
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/modules/auth/pages/LoginPage.vue'),
+    meta: { hidden: true, public: true }
+  },
+  ...errorRoutes(),
+  layoutRoute(menuRoutes, '/dashboard'),
+  catchAllRoute()
+]
+
+const router = createAppRouter(routes)
+
+export default router

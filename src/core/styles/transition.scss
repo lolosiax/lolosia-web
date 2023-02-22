@@ -1,0 +1,60 @@
+/* 过场动画：新页面在顶层圆形展开，旧页面只负责撑住存在时间 */
+.transition-page {
+  height: 100%;
+}
+
+.circle-reveal-enter-active {
+  animation: circle-reveal 0.6s cubic-bezier(0.33, 1, 0.68, 1) both;
+  background-color: #fbf2ff;
+}
+
+.circle-reveal-leave-active {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  animation: circle-reveal-hold 0.6s;
+}
+
+@keyframes circle-reveal {
+  from {
+    clip-path: circle(0 at var(--transition-origin-x, 50vw) var(--transition-origin-y, 50vh));
+  }
+
+  to {
+    clip-path: circle(150% at var(--transition-origin-x, 50vw) var(--transition-origin-y, 50vh));
+  }
+}
+
+@keyframes circle-reveal-hold {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* 调试用布局网格 */
+html.debug-layout-grid * {
+  box-shadow: 0 0 1px 0 greenyellow;
+  animation: debug-color-flash 2s infinite;
+}
+
+@keyframes debug-color-flash {
+  0%,
+  50% {
+    box-shadow: 0 0 1px 0 yellow;
+  }
+
+  51%,
+  100% {
+    box-shadow: 0 0 1px 0 blue;
+  }
+}
+
+/* 进度条跟随品牌色 */
+#nprogress .bar {
+  background: var(--pregress-bar-color) !important;
+}

@@ -1,0 +1,19 @@
+html.base-theme {
+  /* 品牌色（保留旧变量名，业务样式直接复用） */
+  --lolosia-color-primary: #c296cd;
+  --lolosia-color-primary-light-3: #d2b1db;
+  --lolosia-color-primary-light-5: #dfcde6;
+  --lolosia-color-primary-dark-2: #a480ab;
+
+  /* 布局 */
+  --nav-bar-height: 50px;
+  --app-main-padding: 10px;
+  --app-main-background: rgba(255, 255, 255, 0.86);
+  --side-bar-width: 210px;
+
+  /* 进度条 */
+  --pregress-bar-color: var(--lolosia-color-primary);
+
+  /* 页面动画时长 */
+  --page-transform-duration: 0.2s;
+}

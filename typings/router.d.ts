@@ -18,6 +18,10 @@ declare module 'vue-router' {
     activeMenu?: string
     /** 过场动画容器复用键；同一模块内换子路径时保持容器不变 */
     viewKey?: string
+    /** 允许访问的角色（`roleType`）；不写表示所有登录用户可访问 */
+    roles?: string[]
+    /** 不登录也能访问 */
+    public?: boolean
   }
 }
 
