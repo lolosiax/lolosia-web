@@ -4,9 +4,9 @@
     <Sidebar v-if="settings.showLeftMenu" class="sidebar-container" />
     <!--right container-->
     <div class="main-container">
-      <Navbar v-if="settings.showTopNavbar" />
+      <Navbar v-if="settings.showTopNavbar" class="nav-bar"/>
       <TagsView v-if="settings.showTagsView" />
-      <AppMain />
+      <AppMain class="app-main" />
     </div>
   </div>
 </template>
@@ -30,10 +30,20 @@ resizeHandler()
 
 <style lang="scss" scoped>
 .main-container {
-  min-height: 100%;
   transition: margin-left var(--sideBar-switch-duration);
   margin-left: var(--side-bar-width);
   position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  .nav-bar{
+    flex-shrink: 0;
+    height: 50px;
+  }
+  .app-main{
+    flex-grow: 1;
+    overflow: auto;
+  }
 }
 .sidebar-container {
   transition: width var(--sideBar-switch-duration);

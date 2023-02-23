@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import momentMini from 'moment-mini'
 import { elConfirm, elMessage } from './use-element'
+import request from '@/utils/request'
 export const useTable = (searchForm, selectPageReq) => {
   /*define ref*/
   const tableListData = ref([])
@@ -28,7 +29,7 @@ export const useTable = (searchForm, selectPageReq) => {
       data,
       ...config
     }
-    return axiosReq(reqConfig)
+    return request(reqConfig)
   }
 
   /**
@@ -83,7 +84,7 @@ export const useTable = (searchForm, selectPageReq) => {
     const stringLength = deleteNameTitle.length - 1
     elConfirm('删除', `您确定要删除【${deleteNameTitle.slice(0, stringLength)}】吗`).then(() => {
       const data = rowDeleteIdArr
-      axiosReq({
+      request({
         data,
         method: 'DELETE',
         bfLoading: true,
@@ -97,7 +98,7 @@ export const useTable = (searchForm, selectPageReq) => {
   //单个删除
   const tableDelDill = (row, reqConfig) => {
     elConfirm('确定', `您确定要删除【${row.id}】吗？`).then(() => {
-      axiosReq(reqConfig).then(() => {
+      request(reqConfig).then(() => {
         resetPageReq()
         elMessage(`【${row.id}】删除成功`)
       })

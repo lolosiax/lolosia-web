@@ -3,14 +3,14 @@
     <template v-if="showSidebarItem(item.children, item)">
       <Link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{ 'submenu-title-noDropdown': !isNest }">
-          <MenuIcon :meta="onlyOneChild.meta || item.meta" />
+          <MenuIcon :icon="onlyOneChild.meta?.icon || item.meta?.icon" />
           <template #title>{{ langTitle(onlyOneChild.meta?.title) }}</template>
         </el-menu-item>
       </Link>
     </template>
     <el-sub-menu v-else :index="resolvePath(item.path)">
       <template v-if="item.meta" #title>
-        <MenuIcon :meta="item.meta" />
+        <MenuIcon :icon="item.meta?.icon" />
         <span>{{ langTitle(item.meta.title) }}</span>
       </template>
       <SidebarItem

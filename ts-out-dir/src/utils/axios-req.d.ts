@@ -1,1 +1,1 @@
-export default function axiosReq(config: any): import("axios").AxiosPromise<any>;
+export default function request(config: any): import('axios').AxiosPromise<any>

@@ -15,6 +15,7 @@ import 'uno.css'
 import { setupI18n } from '@/lang'
 
 import '@/styles/index.scss' // global css
+import 'bootstrap-icons/font/bootstrap-icons.scss'
 
 //svg-icon
 import 'virtual:svg-icons-register'

@@ -1,6 +1,7 @@
 import NProgress from 'nprogress'
 import type { RouteRawConfig, RouterTypes, rawConfig } from '~/basic'
 import type { RouteRecordName } from 'vue-router'
+import { RouterView } from 'vue-router'
 /**
  * 根据请求，过滤异步路由
  * @param:menuList 异步路由数组
@@ -11,10 +12,12 @@ import Layout from '@/layout/index.vue'
 /*
  * 路由操作
  * */
-import router, { asyncRoutes, constantRoutes, roleCodeRoutes } from '@/router'
+import router, { asyncRoutes, constantRoutes } from '@/router'
 //进度条
 import 'nprogress/nprogress.css'
 import { useBasicStore } from '@/store/basic'
+import { isArray } from 'xe-utils'
+import settings from '@/settings'
 
 const buttonCodes: Array<Number> = [] //按钮权限
 interface menuRow {
@@ -134,17 +137,44 @@ function hasCodePermission(codes, routeItem) {
   }
 }
 //过滤异步路由
-export function filterAsyncRouter({ menuList, roles, codes }) {
+export function filterAsyncRouter({ menuList, roles, codes }: { menuList; roles?; codes? }) {
   const basicStore = useBasicStore()
-  let accessRoutes: RouterTypes = []
-  const permissionMode = basicStore.settings?.permissionMode
-  if (permissionMode === 'rbac') {
-    accessRoutes = filterAsyncRoutesByMenuList(menuList) //by menuList
-  } else if (permissionMode === 'roles') {
-    accessRoutes = filterAsyncRoutesByRoles(roleCodeRoutes, roles) //by roles
-  } else {
-    accessRoutes = filterAsyncRouterByCodes(roleCodeRoutes, codes) //by codes
+  const accessRoutes = menuList
+  // 与项目兼容，移除权限筛选部分，这一部分在公司项目中为后端处理。
+
+  // let accessRoutes: RouterTypes = []
+  // const permissionMode = basicStore.settings?.permissionMode
+  // if (permissionMode === 'rbac') {
+  //   accessRoutes = filterAsyncRoutesByMenuList(menuList) //by menuList
+  // } else if (permissionMode === 'roles') {
+  //   accessRoutes = filterAsyncRoutesByRoles(roleCodeRoutes, roles) //by roles
+  // } else {
+  //   accessRoutes = filterAsyncRouterByCodes(roleCodeRoutes, codes) //by codes
+  // }
+
+  function scanRouter(items: any[]) {
+    for (const item of items) {
+      if (item.component === 'Layout') item.component = () => Layout
+      else if (typeof item.component === 'string') {
+        let url: string = item.component
+        if (url.startsWith('@/')) {
+          url = url.replace(/^@\//, '../')
+        }
+        item.component = async () => {
+          let component
+          try {
+            component = await import(/* @vite-ignore */ url)
+          } catch (e) {
+            console.error(e)
+            component = await import('../views/error-page/404.vue')
+          }
+          return component
+        }
+      }
+      if (isArray(item.children)) scanRouter(item.children)
+    }
   }
+  scanRouter(accessRoutes)
   accessRoutes.forEach((route) => router.addRoute(route))
   asyncRoutes.forEach((item) => router.addRoute(item))
   basicStore.setFilterAsyncRoutes(accessRoutes)

@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useBasicStore } from '@/store/basic'
@@ -17,7 +18,7 @@ service.interceptors.request.use(
       })
     })
     //设置token到header
-    req.headers['AUTHORIZE_TOKEN'] = token
+    req.headers['authorization'] = `Bearer ${token}`
     //如果req.method给get 请求参数设置为 ?name=xxx
     if ('get'.includes(req.method?.toLowerCase() as string)) req.params = req.data
     return req
@@ -58,10 +59,28 @@ service.interceptors.response.use(
   }
 )
 //导出service实例给页面调用 , config->页面的配置
-export default function request(config) {
+export default function request(config: AxiosRequestConfig) {
   return service({
     baseURL: import.meta.env.VITE_APP_BASE_URL,
     timeout: 8000,
     ...config
   })
+}
+
+export function post<T>(url: string, data?): Promise<T> {
+  return request({
+    url,
+    method: 'post',
+    responseType: 'json',
+    data
+  }).then((it) => it.data)
+}
+
+export function get<T>(url: string, data?): Promise<T> {
+  return request({
+    url,
+    method: 'get',
+    responseType: 'json',
+    data
+  }).then((it) => it.data)
 }

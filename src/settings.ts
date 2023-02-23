@@ -31,7 +31,7 @@ export const settings: SettingsConfig = {
    * @type {boolean} true | false
    * @description Whether show TagsView
    */
-  showTagsView: true,
+  showTagsView: false,
   /**
    * @description TagsView show number
    */
@@ -87,7 +87,7 @@ export const settings: SettingsConfig = {
   /*
    * vite.config.js base config
    * */
-  viteBasePath: './',
+  viteBasePath: '/vue-admin-plus/',
 
   /*
    * i18n setting default language
