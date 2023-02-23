@@ -133,3 +133,13 @@ export function allIcons(): string[] {
     .filter((it) => !it.endsWith('-1'))
   return aIcons
 }
+
+/**
+ * 等待一段时间
+ * @param ms 毫秒
+ */
+export async function delay(ms: number) {
+  await new Promise((r) => {
+    setTimeout(r, ms)
+  })
+}

@@ -138,7 +138,7 @@
     },
   }
 </script>
-<style lang="scss">
+<style scoped lang="scss">
 .icon {
   font-size: 1.5em !important;
   padding: 5px !important;
