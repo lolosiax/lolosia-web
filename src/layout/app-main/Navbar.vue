@@ -1,7 +1,7 @@
 <template>
   <div class="navbar reset-el-dropdown">
     <div class="navbar-left">
-      <div class="rowSC">
+      <div class="nav-bar-system rowSC">
         <!--  切换sidebar按钮  -->
         <hamburger
           v-if="settings.showHamburger"
@@ -93,8 +93,17 @@ const loginOut = () => {
   z-index: 1;
   display: flex;
   align-items: center;
+  overflow-x: auto;
+  &::-webkit-scrollbar{
+    display: none;
+  }
+
+  .nav-bar-system{
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .navbar-left{
-    flex: 1 0 0;
     display: flex;
     align-items: center;
     > * {
@@ -102,7 +111,7 @@ const loginOut = () => {
     }
   }
   .navbar-center{
-    flex: 1 1 0;
+    flex: 1 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -111,7 +120,6 @@ const loginOut = () => {
     }
   }
   .navbar-right{
-    flex: 1 0 0;
     display: flex;
     align-items: center;
     justify-content: flex-end;
