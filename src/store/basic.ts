@@ -1,3 +1,4 @@
+import type { VNode } from 'vue'
 import { nextTick } from 'vue'
 import { defineStore } from 'pinia'
 import type { RouterTypes } from '~/basic'
@@ -22,7 +23,12 @@ export const useBasicStore = defineStore('basic', {
       sidebar: { opened: true },
       //axios req collection
       axiosPromiseArr: [] as Array<ObjKeys>,
-      settings: defaultSettings
+      settings: defaultSettings,
+      navbar: {
+        left: [] as VNode[],
+        right: [] as VNode[],
+        center: [] as VNode[]
+      }
     }
   },
   persist: {

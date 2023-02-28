@@ -1,5 +1,5 @@
 <template>
-  <div class="menuManagement-container">
+  <app-page class="menuManagement-container">
 <!--    <vab-query-form>-->
 <!--      <vab-query-form-left-panel :span="4">-->
 <!--        <last-breadcrumb class="page-breadcrumb"/>-->
@@ -7,13 +7,12 @@
 <!--      <vab-query-form-right-panel :span="20">-->
 <!--      </vab-query-form-right-panel>-->
 <!--    </vab-query-form>-->
-    <teleport to="#app-navs">
+    <template #right>
       <el-button type="primary" @click="handleEdit()">添加</el-button>
-    </teleport>
+    </template>
     <div class="container-inner">
       <el-table
         v-loading="listLoading"
-        :height="height"
         :data="list"
         :element-loading-text="elementLoadingText"
         row-key="path"
@@ -79,15 +78,16 @@
       </el-table>
       <edit ref="edit" :menu-data="menuData" @fetch-data="fetchData"/>
     </div>
-  </div>
+  </app-page>
 </template>
 
 <script>
   import { doDelete, getTree } from '@/api/menuManagement'
   import Edit from './components/MenuManagementEdit.vue'
+  import AppPage from "@/components/AppPage.vue";
   export default {
     name: 'MenuManagement',
-    components: { Edit },
+    components: { Edit, AppPage },
     data() {
       return {
         data: [],
@@ -101,9 +101,6 @@
       }
     },
     computed: {
-      height() {
-        return 'auto'
-      },
       menuData() {
         return this.list
       },

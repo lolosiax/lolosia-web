@@ -7,6 +7,8 @@ export {}
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
+    AppPage: typeof import('./../src/components/AppPage.vue')['default']
+    Container: typeof import('@/components/AppPage.vue')['default']
     ElSvgIcon: typeof import('./../src/components/ElSvgIcon.vue')['default']
     IconSelector: typeof import('./../src/components/IconSelector.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
