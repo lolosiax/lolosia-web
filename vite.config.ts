@@ -12,6 +12,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import setting from './src/settings'
 const prodMock = setting.openProdMock
 import vitePluginSetupExtend from './src/plugins/vite-plugin-setup-extend'
+import vitePluginVueSetupExtend from 'vite-plugin-vue-setup-extend'
 // import { visualizer } from 'rollup-plugin-visualizer'
 const pathSrc = resolve(__dirname, 'src')
 export default defineConfig(({ command, mode }) => {
@@ -81,7 +82,7 @@ export default defineConfig(({ command, mode }) => {
           }
         ],
         //配置后会自动扫描目录下的文件
-        dirs: ['src/hooks/**', 'src/utils/**', 'src/store/**', 'src/api/**', 'src/directives/**'],
+        dirs: ['src/hooks/**', 'src/store/**', 'src/directives/**'],
         eslintrc: {
           enabled: true, // Default `false`
           filepath: './eslintrc/.eslintrc-auto-import.json', // Default `./.eslintrc-auto-import.json`
@@ -90,7 +91,8 @@ export default defineConfig(({ command, mode }) => {
         dts: './typings/auto-imports.d.ts'
       }),
 
-      vitePluginSetupExtend({ inject: { title: setting.title } })
+      vitePluginSetupExtend({ inject: { title: setting.title } }),
+      vitePluginVueSetupExtend()
       //依赖分析插件
       // visualizer({
       //   open: true,
