@@ -11,7 +11,7 @@
         <span class="svg-container">
           <ElSvgIcon name="User" :size="14" />
         </span>
-        <el-input v-model="subForm.username" placeholder="用户名" />
+        <el-input v-model="subForm.userName" placeholder="用户名" />
         <!--占位-->
       </el-form-item>
       <el-form-item prop="password" :rules="formRules.isNotNull('密码')">
@@ -53,7 +53,7 @@ const { settings } = useBasicStore();
 const formRules = useElement().formRules;
 //form
 const subForm = reactive({
-  username: "",
+  userName: "",
   password: ""
 });
 const state: any = reactive({

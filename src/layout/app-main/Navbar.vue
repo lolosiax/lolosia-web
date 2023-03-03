@@ -12,15 +12,15 @@
         <!--  面包屑导航  -->
         <breadcrumb class="breadcrumb-container" />
       </div>
-      <component :is="item" v-for="(item, i) of navbar.left" :key="i"/>
+      <component :is="item" v-for="(item, i) of navbar.left" :key="i" />
     </div>
     <div class="navbar-center">
       <!--导航标题-->
       <div v-if="settings.showNavbarTitle" class="heardCenterTitle">{{ settings.title }}</div>
-      <component :is="item" v-for="(item, i) of navbar.center" :key="i"/>
+      <component :is="item" v-for="(item, i) of navbar.center" :key="i" />
     </div>
     <div class="navbar-right">
-      <component :is="item" v-for="(item, i) of navbar.right" :key="i"/>
+      <component :is="item" v-for="(item, i) of navbar.right" :key="i" />
       <!-- 下拉操作菜单 -->
       <div v-if="settings.ShowDropDown" class="right-menu rowSC">
         <!--        <ScreenFull />-->
@@ -29,13 +29,17 @@
         <!--        <SizeSelect />-->
         <!--        <LangSelect />-->
         <el-dropdown trigger="click" size="medium">
-          <div class="avatar-wrapper">
-            <img src="https://github.jzfai.top/file/images/nav-right-logo.gif" class="user-avatar" />
+          <div class="avatar-wrapper" :title="(userInfo?.realName || userInfo?.userName) + ' - 在线'">
+            <img :src="userInfo.avatar ?? userImage" alt="用户头像" class="user-avatar" />
+            <div class="user-avatar-status" />
           </div>
           <template #dropdown>
-            <el-dropdown-menu>
+            <el-dropdown-menu class="drop-down">
+              <el-dropdown-item class="welcome-user">
+                {{ time }}好，<b>{{ userInfo.realName || userImage.userName || "平台用户" }}</b>
+              </el-dropdown-item>
               <router-link to="/">
-                <el-dropdown-item>{{ langTitle("Home") }}</el-dropdown-item>
+                <el-dropdown-item divided>{{ langTitle("Home") }}</el-dropdown-item>
               </router-link>
               <a target="_blank" href="https://github.com/jzfai/vue3-admin-plus">
                 <el-dropdown-item>{{ langTitle("Github") }}</el-dropdown-item>
@@ -66,9 +70,10 @@ import { resetState } from "@/hooks/use-permission";
 import { elMessage } from "@/hooks/use-element";
 import { useBasicStore } from "@/store/basic";
 import { langTitle } from "@/hooks/use-common";
+import userImage from "@/assets/layout/user.png";
 
 const basicStore = useBasicStore();
-const { settings, sidebar, setToggleSideBar, navbar } = basicStore;
+const { settings, sidebar, setToggleSideBar, navbar, userInfo } = basicStore;
 
 const toggleSideBar = () => {
   setToggleSideBar();
@@ -82,6 +87,18 @@ const loginOut = () => {
     resetState();
   });
 };
+
+const time = computed(() => {
+  const hover = new Date().getHours();
+  if (hover > 20) return "晚上";
+  if (hover > 17) return "傍晚";
+  if (hover > 13) return "下午";
+  if (hover > 11) return "中午";
+  if (hover > 8) return "上午";
+  if (hover > 5) return "早上";
+  return "凌晨";
+});
+
 </script>
 
 <style lang="scss" scoped>
@@ -94,36 +111,42 @@ const loginOut = () => {
   display: flex;
   align-items: center;
   overflow-x: auto;
-  &::-webkit-scrollbar{
+
+  &::-webkit-scrollbar {
     display: none;
   }
 
-  .nav-bar-system{
+  .nav-bar-system {
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  .navbar-left{
+  .navbar-left {
     display: flex;
     align-items: center;
+
     > * {
       margin-right: 1em;
     }
   }
-  .navbar-center{
+
+  .navbar-center {
     flex: 1 1;
     display: flex;
     align-items: center;
     justify-content: center;
+
     > * {
       margin: 0.5em;
     }
   }
-  .navbar-right{
+
+  .navbar-right {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    > *{
+
+    > * {
       margin-left: 1em;
     }
   }
@@ -158,6 +181,17 @@ const loginOut = () => {
         border-radius: 10px;
       }
 
+      .user-avatar-status {
+        position: absolute;
+        right: -2px;
+        bottom: 0;
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        background-color: #55e802;
+        box-shadow: 0 0 3px black;
+      }
+
       .el-icon-caret-bottom {
         cursor: pointer;
         position: absolute;
@@ -169,4 +203,6 @@ const loginOut = () => {
   }
 }
 
+.drop-down {
+}
 </style>

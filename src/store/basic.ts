@@ -4,12 +4,20 @@ import { defineStore } from 'pinia'
 import type { RouterTypes } from '~/basic'
 import defaultSettings from '@/settings'
 import router, { constantRoutes } from '@/router'
+
 export const useBasicStore = defineStore('basic', {
   state: () => {
     return {
       token: '',
       getUserInfo: false,
-      userInfo: { username: '', avatar: '' }, //user info
+      userInfo: {
+        userName: '',
+        realName: '',
+        avatar: '',
+        phone: '',
+        id: '',
+        isUse: true
+      }, //user info
       //router
       allRoutes: [] as RouterTypes,
       buttonCodes: [],
@@ -46,13 +54,11 @@ export const useBasicStore = defineStore('basic', {
       })
     },
     setUserInfo({ userInfo, roles, codes }) {
-      const { username, avatar } = userInfo
       this.$patch((state) => {
         state.roles = roles
         state.codes = codes
         state.getUserInfo = true
-        state.userInfo.username = username
-        state.userInfo.avatar = avatar
+        state.userInfo = userInfo
       })
     },
     resetState() {
@@ -65,8 +71,14 @@ export const useBasicStore = defineStore('basic', {
         state.buttonCodes = []
         state.filterAsyncRoutes = []
         //reset userInfo
-        state.userInfo.username = ''
-        state.userInfo.avatar = ''
+        state.userInfo = {
+          userName: '',
+          realName: '',
+          avatar: '',
+          phone: '',
+          id: '',
+          isUse: true
+        }
       })
       this.getUserInfo = false
     },

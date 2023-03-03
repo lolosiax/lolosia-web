@@ -8,7 +8,7 @@ export const useBasicStore = defineStore('basic', {
       token: '',
       getUserInfo: false,
       userInfo: {
-        username: '',
+        userName: '',
         avatar: ''
       },
       allRoutes: [],
