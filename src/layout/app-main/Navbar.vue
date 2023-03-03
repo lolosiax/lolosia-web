@@ -22,6 +22,7 @@
     <div class="navbar-right">
       <component :is="item" v-for="(item, i) of navbar.right" :key="i" />
       <!-- 下拉操作菜单 -->
+      <debugger/>
       <div v-if="settings.ShowDropDown" class="right-menu rowSC">
         <!--        <ScreenFull />-->
         <!--        <ScreenLock />-->
@@ -71,6 +72,7 @@ import { elMessage } from "@/hooks/use-element";
 import { useBasicStore } from "@/store/basic";
 import { langTitle } from "@/hooks/use-common";
 import userImage from "@/assets/layout/user.png";
+import Debugger from "@/layout/app-main/component/Debugger.vue";
 
 const basicStore = useBasicStore();
 const { settings, sidebar, setToggleSideBar, navbar, userInfo } = basicStore;
