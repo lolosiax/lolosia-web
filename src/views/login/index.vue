@@ -46,6 +46,7 @@ import { useBasicStore } from "@/store/basic";
 import { elMessage, useElement } from "@/hooks/use-element";
 import { getMyRole, login } from "@/api/user";
 import type { FormInstance, InputInstance } from "element-plus";
+import { settings as viteSettings } from "@/settings";
 
 /* listen router change and set the query  */
 const { settings } = useBasicStore();
@@ -106,13 +107,22 @@ async function loginFunc() {
     const data = await login(subForm);
     elMessage("登录成功");
     basicStore.setToken(data?.Authorization);
-    const role = await getMyRole()
+    const role = await getMyRole();
     basicStore.setUserInfo({
       userInfo: data,
       roles: [role.roleType],
       codes: [role.roleId]
-    })
-    router.push("/").catch(e => console.error(e));
+    });
+    // router.push("/").catch(e => console.error(e));
+    if (route.query?.redirect) {
+      let url = route.query.redirect as string;
+      if (viteSettings.viteBasePath.endsWith("/") && url.startsWith("/")) {
+        url = url.replace(/^\//, "");
+      }
+      window.location.href = viteSettings.viteBasePath + url;
+    } else {
+      window.location.href = viteSettings.viteBasePath;
+    }
   } catch (e: Error | any) {
     tipMessage = e?.message;
   } finally {
