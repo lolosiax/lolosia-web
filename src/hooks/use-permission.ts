@@ -152,9 +152,12 @@ export function filterAsyncRouter({ menuList, roles, codes }: { menuList; roles?
   //   accessRoutes = filterAsyncRouterByCodes(roleCodeRoutes, codes) //by codes
   // }
 
+  // @ts-ignore
+  const views = import.meta.glob('../views/**/*.vue') as Record<string, () => Promise<Component>>
+
   function scanRouter(items: any[]) {
     for (const item of items) {
-      if (item.component === 'Layout') item.component = () => Layout
+      if (item.component === 'Layout') item.component = async () => Layout
       else if (typeof item.component === 'string') {
         let url: string = item.component
         if (url.startsWith('@/')) {
@@ -163,7 +166,7 @@ export function filterAsyncRouter({ menuList, roles, codes }: { menuList; roles?
         item.component = async () => {
           let component
           try {
-            component = await import(/* @vite-ignore */ url)
+            component = await views[url]()
           } catch (e) {
             console.error(e)
             component = await import('../views/error-page/404.vue')
