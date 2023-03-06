@@ -3,45 +3,94 @@ import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormRules } from 'element-plus'
-import { login } from '@/core/api/user'
+import { login, updatePassword } from '@/core/api/user'
 import { buildSummary } from '@/core/config/env'
 import { settings } from '@/core/config/settings'
 import { useForm } from '@/core/composables/use-form'
-import { requiredRule } from '@/core/lib/validate'
+import { confirmPasswordRule, requiredRule } from '@/core/lib/validate'
 import { useAuthStore } from '@/core/stores/auth'
+import LoginPanel from '../components/LoginPanel.vue'
+import RegisterPanel from '../components/RegisterPanel.vue'
 import logo from '@/core/icons/common/sidebar-logo.svg?url'
 
 defineOptions({ name: 'LoginPage' })
 
+interface LoginPayload {
+  userName: string
+  password: string
+  keepSession: boolean
+}
+
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const { validate } = useForm()
+const { validate: validateFirst } = useForm()
 
+const mode = ref<'login' | 'register'>('login')
 const loading = ref(false)
-const model = reactive({ userName: '', password: '' })
-const rules: FormRules = {
-  userName: [requiredRule('请输入用户名')],
-  password: [requiredRule('请输入密码')]
+const firstVisible = ref(false)
+const firstSaving = ref(false)
+const first = reactive({ target: '', confirm: '' })
+
+const firstRules: FormRules = {
+  target: [requiredRule('请设置新密码'), { min: 6, message: '密码至少 6 位', trigger: 'blur' }],
+  confirm: [requiredRule('请再次输入密码'), confirmPasswordRule(() => first.target)]
 }
 
 const buildText = computed(() => buildSummary())
+const subtitle = computed(() => (mode.value === 'login' ? '登录后继续' : '创建一个新账户'))
 const redirect = computed(() => {
   const target = route.query.redirect
   return typeof target === 'string' && target.startsWith('/') ? target : '/dashboard'
 })
 
-async function submit(): Promise<void> {
-  if (!(await validate())) return
+/** 登录成功后统一跳转；首次登录先弹设置密码。 */
+async function enter(result: { Authorization: string; firstLogin?: boolean }, keepSession: boolean): Promise<void> {
+  auth.setToken(result.Authorization, keepSession)
+  if (result.firstLogin) {
+    firstVisible.value = true
+    return
+  }
+  await router.replace(redirect.value)
+}
+
+async function handleLogin(payload: LoginPayload): Promise<void> {
   loading.value = true
   try {
-    const result = await login(model.userName, model.password)
-    auth.setToken(result.Authorization, true)
-    await router.replace(redirect.value)
+    const result = await login(payload.userName, payload.password || undefined)
+    await enter(result, payload.keepSession)
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '登录失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function handleRegistered(payload: { userName: string; password: string }): Promise<void> {
+  loading.value = true
+  try {
+    const result = await login(payload.userName, payload.password)
+    await enter(result, true)
+  } catch (error) {
+    mode.value = 'login'
+    ElMessage.warning(error instanceof Error ? error.message : '注册成功，请手动登录')
+  } finally {
+    loading.value = false
+  }
+}
+
+/** 首次登录（库里没有密码）时补一个密码。 */
+async function saveFirstPassword(): Promise<void> {
+  if (!(await validateFirst())) return
+
+  firstSaving.value = true
+  try {
+    await updatePassword({ origin: '', target: first.target })
+    ElMessage.success('密码已设置')
+    firstVisible.value = false
+    await router.replace(redirect.value)
+  } finally {
+    firstSaving.value = false
   }
 }
 </script>
@@ -52,30 +101,43 @@ async function submit(): Promise<void> {
       <header class="login-page__header">
         <img class="login-page__logo" :src="logo" alt="" />
         <h1 class="login-page__title">{{ settings.title }}</h1>
-        <p class="login-page__subtitle">登录后继续</p>
+        <p class="login-page__subtitle">{{ subtitle }}</p>
       </header>
 
-      <ElForm ref="formRef" :model="model" :rules="rules" label-position="top" @submit.prevent="submit">
-        <ElFormItem label="用户名" prop="userName">
-          <ElInput v-model="model.userName" placeholder="用户名" autocomplete="username" />
-        </ElFormItem>
-        <ElFormItem label="密码" prop="password">
-          <ElInput
-            v-model="model.password"
-            type="password"
-            placeholder="密码"
-            show-password
-            autocomplete="current-password"
-            @keyup.enter="submit"
-          />
-        </ElFormItem>
-        <ElButton class="login-page__submit" type="primary" round :loading="loading" native-type="submit">
-          登录
+      <LoginPanel v-if="mode === 'login'" :loading="loading" @submit="handleLogin" />
+      <RegisterPanel v-else @registered="handleRegistered" />
+
+      <footer class="login-page__switch">
+        <span>{{ mode === 'login' ? '还没有账户？' : '已经有账户了？' }}</span>
+        <ElButton link type="primary" @click="mode = mode === 'login' ? 'register' : 'login'">
+          {{ mode === 'login' ? '注册' : '去登录' }}
         </ElButton>
-      </ElForm>
+      </footer>
     </section>
 
     <footer class="login-page__footer">{{ buildText }}</footer>
+
+    <ElDialog
+      v-model="firstVisible"
+      title="首次登录"
+      width="380"
+      :close-on-click-modal="false"
+      :show-close="false"
+      append-to-body
+    >
+      <p class="login-page__first-hint">这个账户还没有密码，先设置一个再继续。</p>
+      <ElForm ref="formRef" :model="first" :rules="firstRules" label-position="top">
+        <ElFormItem label="新密码" prop="target">
+          <ElInput v-model="first.target" type="password" show-password autocomplete="new-password" />
+        </ElFormItem>
+        <ElFormItem label="确认密码" prop="confirm">
+          <ElInput v-model="first.confirm" type="password" show-password autocomplete="new-password" />
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton type="primary" :loading="firstSaving" @click="saveFirstPassword">保存并进入</ElButton>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
@@ -126,14 +188,25 @@ async function submit(): Promise<void> {
     color: #8c7b90;
   }
 
-  &__submit {
-    width: 100%;
-    margin-top: 4px;
+  &__switch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #8c7b90;
   }
 
   &__footer {
     font-size: 12px;
     color: #8c7b90;
+  }
+
+  &__first-hint {
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #7a6a7e;
   }
 }
 </style>

@@ -38,7 +38,17 @@ export interface LoginResult extends UserInfo {
 export interface CaptchaResult {
   /** base64 PNG，不含 data URI 前缀 */
   image: string
-  id: number
+  /** 服务端随机 token，校验时原样回传 */
+  id: string
+}
+
+export interface RegisterPayload {
+  userName: string
+  password: string
+  email?: string | null
+  phone?: string | null
+  /** 邮箱验证码；本轮后端忽略 */
+  code?: string | null
 }
 
 export interface MessageResult {
@@ -102,12 +112,13 @@ export function captcha(): Promise<CaptchaResult> {
   return post<CaptchaResult>('captcha')
 }
 
-export function verify(id: number, code: string, userName: string, email: string): Promise<MessageResult> {
+/** 只校验图形验证码；`userName` / `email` 本轮后端不判断。 */
+export function verify(id: string, code: string, userName?: string, email?: string): Promise<MessageResult> {
   return post<MessageResult>('verify', { id, code, userName, email })
 }
 
-export function register(userName: string, email: string, code: string, password: string): Promise<UserListRow> {
-  return post<UserListRow>('register', { userName, email, code, password })
+export function register(payload: RegisterPayload): Promise<UserListRow> {
+  return post<UserListRow>('register', payload)
 }
 
 export function getMyInfo(): Promise<UserInfo> {
