@@ -89,6 +89,7 @@
     "useConfigStore": true,
     "useCssModule": true,
     "useCssVars": true,
+    "useDebuggerStore": true,
     "useElement": true,
     "useErrorLog": true,
     "useLink": true,

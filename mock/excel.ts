@@ -44,7 +44,7 @@ export default [
             {
               order_no: '@guid()',
               timestamp: +Mock.Random.date('T'),
-              userName: '@name()',
+              username: '@name()',
               price: '@float(1000, 15000, 0, 2)',
               'status|1': ['success', 'pending']
             }

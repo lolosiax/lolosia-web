@@ -4,7 +4,7 @@ export function getList(data) {
   return request({
     url: '/role/queryRoleByPage',
     method: 'post',
-    data,
+    data
   })
 }
 
@@ -12,14 +12,14 @@ export function doAdd(data) {
   return request({
     url: '/role/create',
     method: 'post',
-    data,
+    data
   })
 }
 export function doUpdate(data) {
   return request({
     url: '/role/update',
     method: 'post',
-    data,
+    data
   })
 }
 
@@ -27,7 +27,7 @@ export function doDelete(data) {
   return request({
     url: '/role/destroy',
     method: 'post',
-    data,
+    data
   })
 }
 /**
@@ -37,7 +37,7 @@ export function doDelete(data) {
 export function getRoleList() {
   return request({
     url: '/role/list',
-    method: 'get',
+    method: 'post'
   })
 }
 
@@ -47,9 +47,9 @@ export function getRoleList() {
 export function getRoleByUserId(userId) {
   return request({
     url: '/userRole/getByUserId',
-    method: 'get',
-    params: {
-      userId,
-    },
+    method: 'post',
+    data: {
+      userId
+    }
   })
 }

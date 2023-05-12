@@ -90,6 +90,7 @@ declare global {
   const useConfigStore: typeof import('../src/store/config')['useConfigStore']
   const useCssModule: typeof import('vue')['useCssModule']
   const useCssVars: typeof import('vue')['useCssVars']
+  const useDebuggerStore: typeof import('../src/store/debuger')['useDebuggerStore']
   const useElement: typeof import('../src/hooks/use-element')['useElement']
   const useErrorLog: typeof import('../src/hooks/use-error-log')['useErrorLog']
   const useLink: typeof import('vue-router')['useLink']

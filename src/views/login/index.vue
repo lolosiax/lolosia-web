@@ -11,7 +11,7 @@
         <span class="svg-container">
           <ElSvgIcon name="User" :size="14" />
         </span>
-        <el-input v-model="subForm.userName" placeholder="用户名" />
+        <el-input v-model="subForm.username" placeholder="用户名" />
         <!--占位-->
       </el-form-item>
       <el-form-item prop="password" :rules="formRules.isNotNull('密码')">
@@ -47,6 +47,7 @@ import { elMessage, useElement } from "@/hooks/use-element";
 import { getMyRole, login } from "@/api/user";
 import type { FormInstance, InputInstance } from "element-plus";
 import { settings as viteSettings } from "@/settings";
+import { ElMessage } from "element-plus";
 
 /* listen router change and set the query  */
 const { settings } = useBasicStore();
@@ -54,7 +55,7 @@ const { settings } = useBasicStore();
 const formRules = useElement().formRules;
 //form
 const subForm = reactive({
-  userName: "",
+  username: "",
   password: ""
 });
 const state: any = reactive({
@@ -94,8 +95,13 @@ const refLoginForm: FormInstance = $ref(null);
 
 function handleLogin() {
   refLoginForm.validate((valid) => {
-    subLoading = true;
-    if (valid) loginFunc();
+    if (valid) {
+      subLoading = true;
+      loginFunc();
+    }
+    else {
+      ElMessage.error("请检查输入是否正确")
+    }
   });
 }
 

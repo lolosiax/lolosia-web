@@ -30,14 +30,14 @@
         <!--        <SizeSelect />-->
         <!--        <LangSelect />-->
         <el-dropdown trigger="click" size="medium">
-          <div class="avatar-wrapper" :title="(userInfo?.realName || userInfo?.userName) + ' - 在线'">
+          <div class="avatar-wrapper" :title="(userInfo?.realName || userInfo?.username) + ' - 在线'">
             <img :src="userInfo.avatar ?? userImage" alt="用户头像" class="user-avatar" />
             <div class="user-avatar-status" />
           </div>
           <template #dropdown>
             <el-dropdown-menu class="drop-down">
               <el-dropdown-item class="welcome-user">
-                {{ time }}好，<b>{{ userInfo.realName || userImage.userName || "平台用户" }}</b>
+                {{ time }}好，<b>{{ userInfo.realName || userImage.username || "平台用户" }}</b>
               </el-dropdown-item>
               <router-link to="/">
                 <el-dropdown-item divided>{{ langTitle("Home") }}</el-dropdown-item>

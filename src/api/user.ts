@@ -1,5 +1,6 @@
 //获取用户信息
 import { post } from '@/utils/request'
+
 export interface IUser {
   id: string
   userName: string
@@ -35,4 +36,13 @@ export async function login(data): Promise<IUser> {
 //退出登录
 export async function logout(): Promise<void> {
   return post('/logout')
+}
+
+/**
+ * 按照文本搜索前十条用户
+ * @param keys
+ * @return {Promise<any[]>}
+ */
+export function userSearching(keys) {
+  return post('user/searching', { keys })
 }
