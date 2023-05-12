@@ -1,40 +1,11 @@
 <template>
   <app-page class="userManagement-container">
-    <div>
-      <el-form :inline="true" :model="queryForm" @submit.prevent>
-        <!-- <el-form-item>
-          <el-select v-model="queryForm.post" placeholder="专业方向">
-            <el-option
-              v-for="item in postList"
-              :key="item.code"
-              :label="item.value"
-              :value="item.code"
-            ></el-option>
-          </el-select>
-        </el-form-item> -->
-        <el-form-item>
-          <el-input
-            v-model.trim="queryForm.keys"
-            placeholder="请输入关键字"
-            @keyup.enter="queryData"
-          >
-            <template #suffix>
-              <i
-                class="el-icon-search el-input__icon i-search"
-                @click="queryData"
-              />
-            </template>
-          </el-input>
-        </el-form-item>
-        <el-form-item>
-          <!-- <el-button icon="el-icon-search" type="primary" @click="queryData">
-            查询
-          </el-button> -->
-          <el-button type="primary" @click="handleEdit">新增</el-button>
-          <!-- <el-button type="danger" @click="handleExport">导出</el-button> -->
-        </el-form-item>
-      </el-form>
-    </div>
+    <template #right>
+      <right-nav-search-input
+        style="margin-right: 1em" @keyup.enter="queryData"
+      />
+      <el-button type="primary" @click="handleEdit">新增</el-button>
+    </template>
 
     <el-table
       v-loading="listLoading"
@@ -110,11 +81,13 @@ import Edit from "./components/UserManagementEdit.vue";
 import { sha1 } from "hash.js";
 import MenuIcon from "@/layout/sidebar/MenuIcon.vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import RightNavSearchInput from "@/views/system/userManagement/components/RightNavSearchInput.vue";
+import { useSystemStore } from "@/store/system";
 
 // 注释
 export default {
   name: "UserManagement",
-  components: { MenuIcon, Edit },
+  components: { RightNavSearchInput, MenuIcon, Edit },
   data() {
     return {
       list: null,
@@ -181,6 +154,7 @@ export default {
     },
     async fetchData() {
       this.listLoading = true;
+      this.queryForm.keys = useSystemStore().userMng.searchKey;
       const { data } = await getList(this.queryForm);
       this.list = data.data;
       this.total = data.total;
