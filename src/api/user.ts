@@ -1,5 +1,5 @@
 //获取用户信息
-import { post } from '@/utils/request'
+import request, { post } from '@/utils/request'
 
 export interface IUser {
   id: string
@@ -38,6 +38,10 @@ export async function logout(): Promise<void> {
   return post('/logout')
 }
 
+export async function getUser(idList): Promise<IUser[]> {
+  return post('/user/get', { idList })
+}
+
 /**
  * 按照文本搜索前十条用户
  * @param keys
@@ -45,4 +49,32 @@ export async function logout(): Promise<void> {
  */
 export function userSearching(keys) {
   return post('user/searching', { keys })
+}
+
+//修改密码
+export function updatePassword(data: { id?; origin; target; session? }) {
+  return post('/user/updatePassword', data)
+}
+
+//修改密码
+export function setAvatar(id: string, avatar: Blob) {
+  const form = new FormData()
+  form.append('file', avatar, avatar instanceof File ? avatar.name : `${id}.jpg`)
+  return request({
+    url: `/user/avatar`,
+    params: { id },
+    method: 'put',
+    data: form
+  })
+}
+
+//修改密码
+export function getAvatar(id: string): Promise<Blob> {
+  return request({
+    url: `/user/avatar?id=${id}`,
+    responseType: 'blob',
+    headers: {
+      'Cache-Control': 'no-cache'
+    }
+  }) as any
 }

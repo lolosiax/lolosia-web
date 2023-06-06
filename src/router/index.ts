@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouterTypes } from '~/basic'
-import Layout from '@/layout/index.vue'
 import settings from '@/settings'
+const Layout = () => import('@/layout/index.vue')
 
 export const constantRoutes: RouterTypes = [
   {
@@ -35,6 +35,19 @@ export const constantRoutes: RouterTypes = [
         component: () => import('@/views/dashboard/index.vue'),
         //using el svg icon, the elSvgIcon first when at the same time using elSvgIcon and icon
         meta: { title: 'Dashboard', icon: 'house-door', affix: true }
+      }
+    ]
+  },
+  {
+    path: '/user',
+    name: '用户',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'profile',
+        name: '首选项',
+        component: () => import('@/views/user/profile/index.vue')
       }
     ]
   }

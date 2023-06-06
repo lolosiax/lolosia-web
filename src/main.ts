@@ -16,6 +16,7 @@ import { setupI18n } from '@/lang'
 
 import '@/styles/index.scss' // global css
 import 'bootstrap-icons/font/bootstrap-icons.scss'
+import 'vue-cropper/dist/index.css'
 
 //svg-icon
 import 'virtual:svg-icons-register'

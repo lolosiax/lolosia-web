@@ -42,12 +42,9 @@
               <router-link to="/">
                 <el-dropdown-item divided>{{ langTitle("Home") }}</el-dropdown-item>
               </router-link>
-              <a target="_blank" href="https://github.com/jzfai/vue3-admin-plus">
-                <el-dropdown-item>{{ langTitle("Github") }}</el-dropdown-item>
-              </a>
-              <a target="_blank" href="https://github.jzfai.top/low-code-platform">
-                <el-dropdown-item>{{ langTitle("LowCodePlatFrom") }}</el-dropdown-item>
-              </a>
+              <router-link to="/user/profile">
+                <el-dropdown-item>个人中心</el-dropdown-item>
+              </router-link>
               <el-dropdown-item divided @click="loginOut">{{ langTitle("login out") }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
