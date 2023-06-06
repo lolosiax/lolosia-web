@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="app-page">
     <slot/>
     <slot v-if="false" name="left"/>
     <slot v-if="false" name="center"/>
@@ -63,7 +63,3 @@ export default defineComponent({
 })
 
 </script>
-
-<style scoped lang="scss">
-
-</style>
