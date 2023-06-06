@@ -1,5 +1,5 @@
 //获取用户信息
-import request, { post } from '@/utils/request'
+import request, { baseUrl, post } from '@/utils/request'
 
 export interface IUser {
   id: string
@@ -10,6 +10,7 @@ export interface IUser {
   legacyId: number
   database: string
   Authorization: string
+  avatar: string
 }
 
 export interface IUserRole {
@@ -21,7 +22,11 @@ export interface IUserRole {
 }
 
 export async function getMyInfo(): Promise<IUser> {
-  return post('/user/myInfo')
+  const rs = await post<IUser>('/user/myInfo')
+  if (rs.avatar && !/^((https?|data):|\/\/)/.test(rs.avatar)) {
+    rs.avatar = `${baseUrl}/api/user/avatar?id=${rs.id}`
+  }
+  return rs
 }
 
 export async function getMyRole(): Promise<IUserRole> {
