@@ -33,9 +33,10 @@ export const useBasicStore = defineStore('basic', {
       axiosPromiseArr: [] as Array<ObjKeys>,
       settings: defaultSettings,
       navbar: {
-        left: [] as VNode[],
-        right: [] as VNode[],
-        center: [] as VNode[]
+        cursor: 0,
+        left: new Map<string, VNode[]>(),
+        right: new Map<string, VNode[]>(),
+        center: new Map<string, VNode[]>()
       }
     }
   },

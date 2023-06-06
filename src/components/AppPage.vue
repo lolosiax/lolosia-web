@@ -11,6 +11,7 @@
 
 import type { VNode } from 'vue'
 import { useBasicStore } from '@/store/basic'
+import { v4 } from "uuid";
 export default defineComponent({
   name: 'AppPage',
   data() {
@@ -18,7 +19,8 @@ export default defineComponent({
       left: [] as VNode[],
       right: [] as VNode[],
       center: [] as VNode[],
-      default: [] as VNode[]
+      default: [] as VNode[],
+      id: v4()
     }
   },
   mounted() {
@@ -34,43 +36,28 @@ export default defineComponent({
     this.onHide()
   },
   created() {
-    const { navbar } = useBasicStore()
-    const { left, right, center, default: d } = this.$slots
-    this.left = left?.() ?? []
-    this.right = right?.() ?? []
-    this.center = center?.() ?? []
-    this.default = d?.() ?? []
-    navbar.left.push(...this.left)
-    navbar.right.push(...this.right)
-    navbar.center.push(...this.center)
+    const { left, right, center, default: d } = this.$slots;
+    this.left = left?.() ?? [];
+    this.right = right?.() ?? [];
+    this.center = center?.() ?? [];
+    this.default = d?.() ?? [];
   },
   methods: {
     onShowing() {
-      const { left, right, center } = useBasicStore().navbar
-      const pair = [
-        [left, this.left],
-        [right, this.right],
-        [center, this.center]
-      ]
-      for (const [s, l] of pair) {
-        for (const item of s) {
-          if (!l.includes(item)) l.push(item)
-        }
-      }
+      useBasicStore().$patch(({ navbar }) => {
+        navbar.left.set(this.id, this.left);
+        navbar.right.set(this.id, this.right);
+        navbar.center.set(this.id, this.center);
+        navbar.cursor++;
+      });
     },
     onHide() {
-      const { left, right, center } = useBasicStore().navbar
-      const pair = [
-        [left, this.left],
-        [right, this.right],
-        [center, this.center]
-      ]
-      for (const [s, l] of pair) {
-        for (const item of l) {
-          const index = s.indexOf(item)
-          if (index > -1) s.splice(index, 1)
-        }
-      }
+      useBasicStore().$patch(({ navbar }) => {
+        navbar.left.delete(this.id);
+        navbar.right.delete(this.id);
+        navbar.center.delete(this.id);
+        navbar.cursor++;
+      });
     }
   },
 })

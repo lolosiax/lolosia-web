@@ -29,7 +29,7 @@
         <!--        <ThemeSelect />-->
         <!--        <SizeSelect />-->
         <!--        <LangSelect />-->
-        <el-dropdown trigger="click" size="medium">
+        <el-dropdown trigger="click" size="default">
           <div class="avatar-wrapper" :title="(userInfo?.realName || userInfo?.username) + ' - 在线'">
             <img :src="userInfo.avatar ?? userImage" alt="用户头像" class="user-avatar" />
             <div class="user-avatar-status" />
@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import type { VNode } from "vue";
 import { nextTick } from "vue";
 import { useRouter } from "vue-router";
 import Breadcrumb from "./Breadcrumb.vue";
@@ -72,7 +73,7 @@ import userImage from "@/assets/layout/user.png";
 import Debugger from "@/layout/app-main/component/Debugger.vue";
 
 const basicStore = useBasicStore();
-const { settings, sidebar, setToggleSideBar, navbar, userInfo } = basicStore;
+const { settings, sidebar, setToggleSideBar, userInfo } = basicStore;
 
 const toggleSideBar = () => {
   setToggleSideBar();
@@ -96,6 +97,27 @@ const time = computed(() => {
   if (hover > 8) return "上午";
   if (hover > 5) return "早上";
   return "凌晨";
+});
+
+const navbar = reactive({
+  left: [] as VNode[],
+  center: [] as VNode[],
+  right: [] as VNode[]
+});
+
+watch(() => basicStore.navbar.cursor, () => {
+  const left = navbar.left = [] as VNode[];
+  for (const value of basicStore.navbar.left.values()) {
+    left.push(...value);
+  }
+  const center = navbar.center = [] as VNode[];
+  for (const value of basicStore.navbar.center.values()) {
+    center.push(...value);
+  }
+  const right = navbar.right = [] as VNode[];
+  for (const value of basicStore.navbar.right.values()) {
+    right.push(...value);
+  }
 });
 
 </script>

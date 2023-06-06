@@ -96,6 +96,7 @@
     "useRoute": true,
     "useRouter": true,
     "useSlots": true,
+    "useSystemStore": true,
     "useTable": true,
     "useTagsViewStore": true,
     "userRouteStore": true,
