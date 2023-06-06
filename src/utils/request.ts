@@ -1,6 +1,6 @@
 import type { AxiosRequestConfig } from 'axios'
 import axios from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useBasicStore } from '@/store/basic'
 
 //使用axios.create()创建一个axios请求实例
@@ -31,6 +31,8 @@ service.interceptors.request.use(
 //请求后拦截
 service.interceptors.response.use(
   (res) => {
+    const type = (res.headers['content-type'] as string) || ''
+    if (!type.startsWith('application/json')) return res.data
     const { code } = res.data
     const successCode = '0,200,20000'
     const noAuthCode = '401,403'
@@ -38,30 +40,39 @@ service.interceptors.response.use(
       return res.data
     } else {
       if (noAuthCode.includes(code) && !location.href.includes('/login')) {
-        ElMessageBox.confirm('请重新登录', {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          useBasicStore().resetStateAndToLogin()
-        })
+        useBasicStore().resetStateAndToLogin()
       }
-      return Promise.reject(res.data)
+      return Promise.reject(new Error(res.data?.msg ?? '未知异常'))
     }
   },
   //响应报错
   (err) => {
-    ElMessage.error({
-      message: err,
-      duration: 2 * 1000
-    })
+    const { response } = err
+    if (response?.status === 401) {
+      useBasicStore().resetStateAndToLogin()
+    } else {
+      const { msg } = response?.data ?? { msg: '未知异常' }
+      ElMessage.error({
+        message: msg || err,
+        duration: 2 * 1000
+      })
+    }
     return Promise.reject(err)
   }
 )
+
+export const baseUrl: string = (() => {
+  let port = import.meta.env.VITE_APP_BASE_URL
+  if (/:\d{1,5}/.test(port)) port = port.match(/(?<port>:\d{1,5})/)?.groups?.port ?? ''
+  else port = `:${location.port}`
+  return `${location.protocol}//${location.hostname}${port}`
+})()
+
 //导出service实例给页面调用 , config->页面的配置
 export default function request(config: AxiosRequestConfig) {
   return service({
-    baseURL: import.meta.env.VITE_APP_BASE_URL,
+    //baseURL: import.meta.env.VITE_APP_BASE_URL,
+    baseURL: baseUrl,
     timeout: 8000,
     ...config
   })

@@ -46,6 +46,7 @@ service.interceptors.response.use(
     }
   },
   (error) => {
+    // eslint-disable-next-line no-console
     console.log(`err${error}`) // for debug
     ElMessage({
       message: error.ElMessage,

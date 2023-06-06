@@ -74,6 +74,7 @@ module.exports = defineConfig({
     'prefer-rest-params': 'error',
     'prefer-spread': 'error',
     'prefer-template': 'error',
+    'eslint-comments/no-unlimited-disable': 'off',
 
     'no-redeclare': 'off',
     '@typescript-eslint/no-redeclare': 'error',

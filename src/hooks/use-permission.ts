@@ -1,7 +1,6 @@
 import NProgress from 'nprogress'
 import type { RouteRawConfig, RouterTypes, rawConfig } from '~/basic'
 import type { RouteRecordName } from 'vue-router'
-import { RouterView } from 'vue-router'
 /**
  * 根据请求，过滤异步路由
  * @param:menuList 异步路由数组
@@ -17,7 +16,6 @@ import router, { asyncRoutes, constantRoutes } from '@/router'
 import 'nprogress/nprogress.css'
 import { useBasicStore } from '@/store/basic'
 import { isArray } from 'xe-utils'
-import settings from '@/settings'
 
 const buttonCodes: Array<Number> = [] //按钮权限
 interface menuRow {

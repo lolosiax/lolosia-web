@@ -42,8 +42,7 @@ export function isName(value) {
  * @returns {boolean}
  */
 export function isIP(ip) {
-  const reg =
-    /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/
+  const reg = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/
   return reg.test(ip)
 }
 
@@ -53,8 +52,7 @@ export function isIP(ip) {
  * @returns {boolean}
  */
 export function isUrl(url) {
-  const reg =
-    /^(https?|ftp):\/\/([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))(:[0-9]+)*(\/($|[a-zA-Z0-9.,?'\\+&%$#=~_-]+))*$/
+  const reg = /^(https?|ftp):\/\/([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))(:[0-9]+)*(\/($|[a-zA-Z0-9.,?'\\+&%$#=~_-]+))*$/
   return reg.test(url)
 }
 
@@ -124,8 +122,7 @@ export function isObject(arg) {
  * @returns {boolean}
  */
 export function isPort(str) {
-  const reg =
-    /^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$/
+  const reg = /^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$/
   return reg.test(str)
 }
 
@@ -145,8 +142,7 @@ export function isPhone(str) {
  * @returns {boolean}
  */
 export function isIdCard(str) {
-  const reg =
-    /^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/
+  const reg = /^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/
   return reg.test(str)
 }
 
@@ -176,13 +172,7 @@ export function isChina(str) {
  * @returns {boolean}
  */
 export function isBlank(str) {
-  return (
-    str == null ||
-    false ||
-    str === '' ||
-    str.trim() === '' ||
-    str.toLocaleLowerCase().trim() === 'null'
-  )
+  return str == null || false || str === '' || str.trim() === '' || str.toLocaleLowerCase().trim() === 'null'
 }
 
 /**
@@ -191,8 +181,7 @@ export function isBlank(str) {
  * @returns {boolean}
  */
 export function isTel(str) {
-  const reg =
-    /^(400|800)([0-9\\-]{7,10})|(([0-9]{4}|[0-9]{3})(-| )?)?([0-9]{7,8})((-| |转)*([0-9]{1,4}))?$/
+  const reg = /^(400|800)([0-9\\-]{7,10})|(([0-9]{4}|[0-9]{3})(-| )?)?([0-9]{7,8})((-| |转)*([0-9]{1,4}))?$/
   return reg.test(str)
 }
 
@@ -210,14 +199,14 @@ export function isNum(str) {
  * @param cid 18为的身份证号码
  * @return Boolean 是否有效
  **/
-export function isIdentityNumber(cid) {
+export function isIdentityNumber(cid: string) {
   const arrExp = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2] //加权因子
   const arrValid = '1 0 X 9 8 7 6 5 4 3 2'.split(' ') //校检码
   if (/^\d{17}\d|x$/i.test(cid)) {
     let sum = 0
     for (let i = 0; i < cid.length - 1; i++) {
       // 对前17位数字与权值乘积求和
-      sum += Number.parseInt(cid.substr(i, 1), 10) * arrExp[i]
+      sum += Number.parseInt(cid.slice(i, i + 1), 10) * arrExp[i]
     }
     // 计算模（固定算法）
     const idx = sum % 11
@@ -253,7 +242,7 @@ export class ElValidate {
       validate.push({
         required: true,
         trigger: 'blur',
-        message: isString(canEmpty) ? canEmpty : '请输入文本',
+        message: isString(canEmpty) ? canEmpty : '请输入文本'
       })
       return validate
     }
@@ -268,11 +257,11 @@ export class ElValidate {
       {
         trigger: 'blur',
         message: '请输入有效的手机号',
-        validator (rule, value, callback) {
+        validator(rule, value, callback) {
           if (/^1[3456789]\d{9}$/g.test(value)) callback()
           else callback(new Error('无效的手机号'))
-        },
-      },
+        }
+      }
     ])
   }
 
@@ -285,14 +274,14 @@ export class ElValidate {
       {
         trigger: 'blur',
         message: '请输入有效的身份证号',
-        validator (rule, value, callback) {
+        validator(rule, value, callback) {
           if (isIdentityNumber(value)) {
             callback()
           } else {
             callback(new Error('无效的身份证号'))
           }
-        },
-      },
+        }
+      }
     ])
   }
 
@@ -311,7 +300,7 @@ export class ElValidate {
       {
         trigger: 'change',
         message: lint,
-        validator (rule, value, callback) {
+        validator(rule, value, callback) {
           if (value.length < min) {
             callback(new Error(`输入文本太短，最少长度为${min}`))
             return
@@ -321,8 +310,8 @@ export class ElValidate {
             return
           }
           callback()
-        },
-      },
+        }
+      }
     ])
   }
 

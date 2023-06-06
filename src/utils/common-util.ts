@@ -13,7 +13,7 @@ export function mobilePhone(str) {
 /*
  * 传入一串num四个 一个空格
  * */
-export function toSplitNumFor(num, numToSpace) {
+export function toSplitNumFor(num) {
   return num.replace(/(.{4})/g, '$1 ')
 }
 // 匹配银行卡号
