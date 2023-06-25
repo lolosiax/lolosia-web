@@ -10,6 +10,7 @@ import { presetAttributify, presetIcons, presetUno } from 'unocss'
 import mkcert from 'vite-plugin-mkcert'
 import AutoImport from 'unplugin-auto-import/vite'
 import setting from './src/settings'
+import ReactivityTransform from '@vue-macros/reactivity-transform/vite'
 const prodMock = setting.openProdMock
 import vitePluginSetupExtend from './src/plugins/vite-plugin-setup-extend'
 import vitePluginVueSetupExtend from 'vite-plugin-vue-setup-extend'
@@ -26,7 +27,7 @@ export default defineConfig(({ command, mode }) => {
     },
     clearScreen: false, //设为 false 可以避免 Vite 清屏而错过在终端中打印某些关键信息
     server: {
-      hmr: { overlay: false }, //设置 server.hmr.overlay 为 false 可以禁用开发服务器错误的屏蔽。方便错误查看
+      //hmr: { overlay: false }, //设置 server.hmr.overlay 为 false 可以禁用开发服务器错误的屏蔽。方便错误查看
       port: 5005, // 类型： number 指定服务器端口;
       open: false, // 类型： boolean | string在服务器启动时自动在浏览器中打开应用程序；
       host: true,
@@ -38,8 +39,9 @@ export default defineConfig(({ command, mode }) => {
       strictPort: true
     },
     plugins: [
-      vue({ reactivityTransform: true }),
+      vue(),
       vueJsx(),
+      ReactivityTransform(),
       UnoCSS({
         presets: [presetUno(), presetAttributify(), presetIcons()]
       }),
@@ -55,7 +57,6 @@ export default defineConfig(({ command, mode }) => {
       }),
       //https://github.com/anncwb/vite-plugin-mock/blob/HEAD/README.zh_CN.md
       viteMockServe({
-        supportTs: true,
         mockPath: 'mock',
         localEnabled: command === 'serve',
         prodEnabled: prodMock,
