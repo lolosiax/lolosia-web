@@ -10,7 +10,7 @@
     </div>
   </div>
 </template>
-<script setup lang="ts">
+<script setup lang="ts" name="DefaultLayout">
 import { computed } from 'vue'
 import Sidebar from './sidebar/index.vue'
 import AppMain from './app-main/index.vue'

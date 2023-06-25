@@ -28,8 +28,8 @@
 import { ref } from 'vue'
 import { resolve } from 'path-browserify'
 import Link from './Link.vue'
-import MenuIcon from '../../../components/MenuIcon.vue'
-import type { RouteRawConfig } from '~/basic'
+import MenuIcon from '@/components/MenuIcon.vue'
+import type { RouteRawConfig, RouterTypes } from '~/basic'
 import { isExternal } from '@/hooks/use-layout'
 import { langTitle } from '@/hooks/use-common'
 
@@ -52,13 +52,13 @@ const props = defineProps({
 })
 //显示sidebarItem 的情况
 const onlyOneChild = ref()
-const showSidebarItem = (children = [], parent) => {
-  const showingChildren = children.filter((item: RouteRawConfig) => {
-    if (item.hidden) {
-      return false
-    } else {
-      return true
-    }
+const showSidebarItem = (children: RouterTypes = [], parent: RouteRawConfig) => {
+  if (parent.expand === false) {
+    onlyOneChild.value = { ...parent, path: '', noChildren: true }
+    return true
+  }
+  const showingChildren = children.filter((item) => {
+    return !item.hidden
   })
   if (showingChildren.length === 1 && !parent?.alwaysShow) {
     onlyOneChild.value = showingChildren[0]
@@ -80,3 +80,9 @@ const resolvePath = (routePath) => {
   return resolve(props.basePath, routePath)
 }
 </script>
+
+<style scoped lang="scss">
+:deep(.el-menu-item.is-active) {
+  text-shadow: 1px 1px 0 #ffffff88;
+}
+</style>

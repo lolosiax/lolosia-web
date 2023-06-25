@@ -17,8 +17,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed } from 'vue'
+<script setup lang="ts" name="SideBar">
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useRoute } from "vue-router";
 import Logo from './Logo.vue'

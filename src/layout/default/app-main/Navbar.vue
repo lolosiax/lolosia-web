@@ -22,7 +22,7 @@
     <div class="navbar-right">
       <component :is="item" v-for="(item, i) of navbar.right" :key="i" />
       <!-- 下拉操作菜单 -->
-      <debugger/>
+      <debugger />
       <div v-if="settings.ShowDropDown" class="right-menu rowSC">
         <!--        <ScreenFull />-->
         <!--        <ScreenLock />-->
@@ -30,14 +30,24 @@
         <!--        <SizeSelect />-->
         <!--        <LangSelect />-->
         <el-dropdown trigger="click" size="default">
-          <div class="avatar-wrapper" :title="(userInfo?.realName || userInfo?.username) + ' - 在线'">
+          <div class="avatar-wrapper" :title="(userInfo?.realName || userInfo?.userName) + ' - 在线'">
             <img :src="userInfo.avatar ?? userImage" alt="用户头像" class="user-avatar" />
-            <div class="user-avatar-status" />
+            <div class="user-avatar-status" :style="{backgroundColor: !online ? 'red' : null}">
+              <el-popover :visible="!online" :effect="'dark'" :width="170">
+                <template #reference>
+                  <div />
+                </template>
+                <div class="online-status">
+                  <menu-icon icon="exclamation-triangle-fill" />
+                  <span>与服务器连接中断</span>
+                </div>
+              </el-popover>
+            </div>
           </div>
           <template #dropdown>
             <el-dropdown-menu class="drop-down">
               <el-dropdown-item class="welcome-user">
-                {{ time }}好，<b>{{ userInfo.realName || userImage.username || "平台用户" }}</b>
+                {{ time }}好，<b>{{ userInfo.realName || userImage.userName || "平台用户" }}</b>
               </el-dropdown-item>
               <router-link to="/">
                 <el-dropdown-item divided>{{ langTitle("Home") }}</el-dropdown-item>
@@ -71,9 +81,12 @@ import { useBasicStore } from "@/store/basic";
 import { langTitle } from "@/hooks/use-common";
 import userImage from "@/assets/layout/user.png";
 import Debugger from "@/layout/default/app-main/component/Debugger.vue";
+import MenuIcon from "@/components/MenuIcon.vue";
+import { useDebuggerStore } from "@/store/debuger";
 
 const basicStore = useBasicStore();
 const { settings, sidebar, setToggleSideBar, userInfo } = basicStore;
+const online = toRef(basicStore, "online");
 
 const toggleSideBar = () => {
   setToggleSideBar();
@@ -123,6 +136,21 @@ watch(() => basicStore.navbar.cursor, () => {
 </script>
 
 <style lang="scss" scoped>
+
+.online-status {
+  display: flex;
+  align-items: center;
+
+  .menu-icon {
+    color: gold;
+    margin-right: 0.5em;
+  }
+
+  span {
+    color: red;
+  }
+}
+
 .navbar {
   height: var(--nav-bar-height);
   overflow: hidden;
