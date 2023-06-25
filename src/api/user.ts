@@ -22,11 +22,7 @@ export interface IUserRole {
 }
 
 export async function getMyInfo(): Promise<IUser> {
-  const rs = await post<IUser>('/user/myInfo')
-  if (rs.avatar && !/^((https?|data):|\/\/)/.test(rs.avatar)) {
-    rs.avatar = `${baseUrl}/api/user/avatar?id=${rs.id}`
-  }
-  return rs
+  return post<IUser>('/user/myInfo')
 }
 
 export async function getMyRole(): Promise<IUserRole> {

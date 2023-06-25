@@ -11,6 +11,7 @@ export const useBasicStore = defineStore('basic', {
     return {
       token: '',
       getUserInfo: false,
+      online: true,
       userInfo: {
         username: '',
         realName: '',

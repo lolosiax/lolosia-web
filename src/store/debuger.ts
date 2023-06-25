@@ -1,18 +1,15 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia'
 
-export const useDebuggerStore = defineStore('debugger',{
-  state(){
+export const useDebuggerStore = defineStore('debugger', {
+  state() {
     return {
-      showLayoutGrid: false
+      ui: {
+        showLayoutGrid: false
+      }
     }
   },
-  persist:{
+  persist: {
     storage: localStorage,
-    paths: ['showLayoutGrid']
-  },
-  actions:{
-    setShowLayoutGrid(value){
-      this.showLayoutGrid = value
-    }
+    paths: undefined
   }
 })
