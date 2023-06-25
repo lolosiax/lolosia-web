@@ -79,7 +79,7 @@
 import { doDelete, getList } from "@/api/userManagement";
 import Edit from "./components/UserManagementEdit.vue";
 import { sha1 } from "hash.js";
-import MenuIcon from "@/layout/sidebar/MenuIcon.vue";
+import MenuIcon from "@/components/MenuIcon.vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import RightNavSearchInput from "@/views/system/userManagement/components/RightNavSearchInput.vue";
 import { useSystemStore } from "@/store/system";

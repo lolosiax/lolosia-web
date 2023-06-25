@@ -28,7 +28,7 @@
 import { ref } from 'vue'
 import { resolve } from 'path-browserify'
 import Link from './Link.vue'
-import MenuIcon from './MenuIcon.vue'
+import MenuIcon from '../../components/MenuIcon.vue'
 import type { RouteRawConfig } from '~/basic'
 import { isExternal } from '@/hooks/use-layout'
 import { langTitle } from '@/hooks/use-common'

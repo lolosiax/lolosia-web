@@ -1,5 +1,5 @@
 import router from '@/router'
-import { filterAsyncRouter, progressClose, progressStart } from '@/hooks/use-permission'
+import { progressClose, progressStart, setRouterFromDatabase } from '@/hooks/use-permission'
 import { useBasicStore } from '@/store/basic'
 import { getMyInfo, getMyRole } from '@/api/user'
 import { langTitle } from '@/hooks/use-common'
@@ -26,7 +26,7 @@ router.beforeEach(async (to) => {
           const [userData, userRole] = await Promise.all([getMyInfo(), getMyRole()])
           const routes = await getRouterList({ roleId: userRole.roleId })
           //3.动态路由权限筛选
-          filterAsyncRouter({ menuList: routes })
+          setRouterFromDatabase(routes)
           //4.保存用户信息到store
           basicStore.setUserInfo({
             userInfo: userData,
@@ -37,7 +37,6 @@ router.beforeEach(async (to) => {
           return { ...to, replace: true }
         } catch (e) {
           console.error(`route permission error${e}`)
-          basicStore.resetState()
           progressClose()
           return `/500?redirect=${to.path}`
         }

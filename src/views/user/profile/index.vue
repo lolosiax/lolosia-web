@@ -38,7 +38,6 @@
 <script setup lang="ts">
 import AvatarEdit from "@/views/user/profile/components/AvatarEditor.vue";
 import UserImage from "@/assets/layout/user.png";
-import MenuIcon from "@/components/MenuIcon.vue";
 
 const showAvatarEditor = ref(false);
 const userInfo = toRef(useBasicStore(), "userInfo");

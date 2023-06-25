@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import MenuIcon from "@/layout/sidebar/MenuIcon.vue";
+import MenuIcon from "@/components/MenuIcon.vue";
 import { useDebuggerStore } from "@/store/debuger";
 
 const store = useDebuggerStore()
