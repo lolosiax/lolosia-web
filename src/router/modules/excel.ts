@@ -1,4 +1,4 @@
-import Layout from '@/layout/index.vue'
+import Layout from '@/layout/default/index.vue'
 const excel = {
   path: '/excel',
   component: Layout,

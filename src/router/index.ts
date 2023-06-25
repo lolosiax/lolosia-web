@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouterTypes } from '~/basic'
 import settings from '@/settings'
-const Layout = () => import('@/layout/index.vue')
+import { userRoute } from '@/router/modules/user'
+const Layout = () => import('@/layout/default/index.vue')
 
 export const constantRoutes: RouterTypes = [
   {
@@ -38,19 +39,7 @@ export const constantRoutes: RouterTypes = [
       }
     ]
   },
-  {
-    path: '/user',
-    name: '用户',
-    component: Layout,
-    hidden: true,
-    children: [
-      {
-        path: 'profile',
-        name: '首选项',
-        component: () => import('@/views/user/profile/index.vue')
-      }
-    ]
-  }
+  userRoute
 ]
 
 //角色和code数组动态路由

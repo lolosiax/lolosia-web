@@ -1,6 +1,6 @@
 import NProgress from 'nprogress'
 import type { RouteRecordName } from 'vue-router'
-import Layout from '@/layout/index.vue'
+import Layout from '@/layout/default/index.vue'
 import router, { asyncRoutes, constantRoutes } from '@/router'
 import 'nprogress/nprogress.css'
 import { useBasicStore } from '@/store/basic'

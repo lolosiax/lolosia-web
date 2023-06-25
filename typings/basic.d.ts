@@ -11,31 +11,50 @@
 
 /*router*/
 import type { RouteRecordRaw } from 'vue-router'
-export interface rawConfig {
-  hidden?: boolean
-  alwaysShow?: boolean
-  code?: number
-  name?: string
-  fullPath?: string
-  path?: string
-  meta?: {
-    title: string
-    icon?: string
-    affix?: boolean
-    activeMenu?: string
-    breadcrumb?: boolean
-    roles?: Array<string>
-    elSvgIcon?: string
-    code?: number
-    cachePage?: boolean
-    leaveRmCachePage?: boolean
-    closeTabRmCache?: boolean
-  }
-  children?: RouterOptions
-  redirect?: string
+
+import type icons from 'bootstrap-icons/font/bootstrap-icons.json'
+export type BootstrapIcons = keyof typeof icons;
+
+export interface RawConfig {
+  /** 是否隐藏路由 */
+  hidden: boolean
+  /** TODO 不知道。 */
+  alwaysShow: boolean
+  /** TODO 不知道。 */
+  code: number
+  /** 路由名称 */
+  name: string
+  /** 完整路径，一般不填 */
+  fullPath: string
+  /** 路径，可以为相对路径 */
+  path: string
+  /** 元数据，没有元数据时不显示菜单 */
+  meta: Omit<Partial<RawConfigMeta>, 'title'> & Required<Pick<RawConfigMeta, 'title'>>
+  /** 子路由 */
+  children: RouterTypes
+  /** 重定向，绝对路径 */
+  redirect: string
+  /** 是否显示子菜单 */
+  expand: boolean
 }
-export type RouteRawConfig = RouteRecordRaw & rawConfig
-export type RouterTypes = Array<rawProp>
+
+export interface RawConfigMeta {
+  /** 路由标题，显示在菜单按钮上 */
+  title: string
+  /** 路由图标 */
+  icon: BootstrapIcons
+  affix: boolean
+  activeMenu: string
+  breadcrumb: boolean
+  roles: Array<string>
+  code: number
+  cachePage: boolean
+  leaveRmCachePage: boolean
+  closeTabRmCache: boolean
+}
+
+export type RouteRawConfig = RouteRecordRaw & Partial<RawConfig>
+export type RouterTypes = Array<RouteRawConfig>
 
 /*settings*/
 export interface SettingsConfig {

@@ -70,7 +70,7 @@ import { elMessage } from "@/hooks/use-element";
 import { useBasicStore } from "@/store/basic";
 import { langTitle } from "@/hooks/use-common";
 import userImage from "@/assets/layout/user.png";
-import Debugger from "@/layout/app-main/component/Debugger.vue";
+import Debugger from "@/layout/default/app-main/component/Debugger.vue";
 
 const basicStore = useBasicStore();
 const { settings, sidebar, setToggleSideBar, userInfo } = basicStore;
