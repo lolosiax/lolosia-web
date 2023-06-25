@@ -47,13 +47,17 @@ export async function getUser(idList): Promise<IUser[]> {
   return post('/user/get', { idList })
 }
 
+export async function editUser(data: IUser) {
+  return post('/user/edit', data)
+}
+
 /**
  * 按照文本搜索前十条用户
  * @param keys
  * @return {Promise<any[]>}
  */
 export function userSearching(keys) {
-  return post('user/searching', { keys })
+  return post('/user/searching', { keys })
 }
 
 //修改密码

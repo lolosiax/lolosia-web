@@ -1,47 +1,11 @@
 <template>
   <div class="user-profile">
-    <el-card header="个人信息">
-      <el-descriptions label-width="120px" size="default" border :column="1">
-        <el-descriptions-item label="头像">
-          <div class="avatar-frame">
-            <img :src="userInfo.avatar || UserImage" class="avatar" alt="用户头像" @click="showAvatarEditor = true" />
-            <div class="avatar-tip">
-              <i class="bi bi-pen-fill" />
-              <span>修改头像</span>
-            </div>
-          </div>
-        </el-descriptions-item>
-        <el-descriptions-item label="用户名">
-          {{ userInfo.realName }}
-        </el-descriptions-item>
-        <el-descriptions-item label="账号">
-          {{ userInfo.userName }}
-        </el-descriptions-item>
-        <el-descriptions-item label="手机号">
-          {{ userInfo.phone }}
-        </el-descriptions-item>
-        <el-descriptions-item label="UID">
-          {{ userInfo.id }}
-        </el-descriptions-item>
-        <el-descriptions-item label="注册日期">
-          {{ userInfo.createdAt }}
-        </el-descriptions-item>
-        <el-descriptions-item label="上次更新">
-          {{ userInfo.updatedAt }}
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-card>
-    <avatar-edit v-model="showAvatarEditor" />
+    <user-detail />
   </div>
 </template>
 
 <script setup lang="ts">
-import AvatarEdit from "@/views/user/profile/components/AvatarEditor.vue";
-import UserImage from "@/assets/layout/user.png";
-
-const showAvatarEditor = ref(false);
-const userInfo = toRef(useBasicStore(), "userInfo");
-
+import UserDetail from "@/views/user/profile/components/UserDetail.vue";
 </script>
 
 <style scoped lang="scss">

@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import type { RouterTypes } from '~/basic'
 import defaultSettings from '@/settings'
 import router, { constantRoutes } from '@/router'
+import type { IUser } from '@/api/user'
 
 export const useBasicStore = defineStore('basic', {
   state: () => {
@@ -129,3 +130,23 @@ export const useBasicStore = defineStore('basic', {
     }
   }
 })
+
+export interface IUserInfo {
+  userName: string
+  realName: string
+  avatar: string
+  phone: string
+  id: string
+  isUse: boolean
+  team: string
+  iGameKey: string
+}
+
+export interface IDatabaseType {
+  createdAt: string
+  updatedAt: string
+  createdBy?: string
+  updatedBy?: string
+}
+
+export interface IUnionUserInfo extends IUserInfo, IUser, IDatabaseType {}
