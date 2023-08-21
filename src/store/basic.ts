@@ -36,9 +36,9 @@ export const useBasicStore = defineStore('basic', {
       settings: defaultSettings,
       navbar: {
         cursor: 0,
-        left: new Map<string, VNode[]>(),
-        right: new Map<string, VNode[]>(),
-        center: new Map<string, VNode[]>()
+        left: new Map<string, () => VNode[]>(),
+        right: new Map<string, () => VNode[]>(),
+        center: new Map<string, () => VNode[]>()
       }
     }
   },
