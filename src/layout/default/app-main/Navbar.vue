@@ -103,8 +103,9 @@ const toggleSideBar = () => {
     align-items: center;
     justify-content: flex-end;
 
-    > * {
-      margin-left: 1em;
+    :deep(> *) {
+      margin-left: 1.5em;
+      margin-right: 0;
     }
   }
 
