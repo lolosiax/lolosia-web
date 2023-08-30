@@ -25,4 +25,37 @@ const { settings, sidebar, userInfo } = basicStore
 const online = toRef(basicStore, 'online')
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+//logo
+.avatar-wrapper {
+  margin-top: 5px;
+  position: relative;
+  cursor: pointer;
+
+  .user-avatar {
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .user-avatar-status {
+    position: absolute;
+    right: -2px;
+    bottom: 0;
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    background-color: #55e802;
+    box-shadow: 0 0 3px black;
+  }
+
+  .el-icon-caret-bottom {
+    cursor: pointer;
+    position: absolute;
+    right: -20px;
+    top: 25px;
+    font-size: 12px;
+  }
+}
+</style>
