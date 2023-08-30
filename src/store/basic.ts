@@ -13,7 +13,7 @@ export const useBasicStore = defineStore('basic', {
       getUserInfo: false,
       online: true,
       userInfo: {
-        username: '',
+        userName: '',
         realName: '',
         avatar: '',
         phone: '',
@@ -75,7 +75,7 @@ export const useBasicStore = defineStore('basic', {
         state.filterAsyncRoutes = []
         //reset userInfo
         state.userInfo = {
-          username: '',
+          userName: '',
           realName: '',
           avatar: '',
           phone: '',

@@ -7,11 +7,11 @@
       <div class="title-container">
         <h3 class="title text-center">{{ settings.title }}</h3>
       </div>
-      <el-form-item prop="username" :rules="formRules.isNotNull('用户名')">
+      <el-form-item prop="userName" :rules="formRules.isNotNull('用户名')">
         <span class="svg-container">
           <ElSvgIcon name="User" :size="14" />
         </span>
-        <el-input v-model="subForm.username" placeholder="用户名" />
+        <el-input v-model="subForm.userName" placeholder="用户名" />
         <!--占位-->
       </el-form-item>
       <el-form-item prop="password" :rules="formRules.isNotNull('密码')">
@@ -40,117 +40,116 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useBasicStore } from "@/store/basic";
-import { elMessage, useElement } from "@/hooks/use-element";
-import { getMyRole, login } from "@/api/user";
-import type { FormInstance, InputInstance } from "element-plus";
-import { settings as viteSettings } from "@/settings";
-import { ElMessage } from "element-plus";
+import { reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useBasicStore } from '@/store/basic'
+import { elMessage, useElement } from '@/hooks/use-element'
+import { getMyRole, login } from '@/api/user'
+import type { FormInstance, InputInstance } from 'element-plus'
+import { settings as viteSettings } from '@/settings'
+import { ElMessage } from 'element-plus'
 
 /* listen router change and set the query  */
-const { settings } = useBasicStore();
+const { settings } = useBasicStore()
 //element valid
-const formRules = useElement().formRules;
+const formRules = useElement().formRules
 //form
 const subForm = reactive({
-  username: "",
-  password: ""
-});
+  userName: '',
+  password: ''
+})
 const state: any = reactive({
   otherQuery: {},
   redirect: undefined
-});
-const route = useRoute();
+})
+const route = useRoute()
 
 function getOtherQuery(query) {
   return Object.keys(query).reduce((acc, cur) => {
-    if (cur !== "redirect") {
-      acc[cur] = query[cur];
+    if (cur !== 'redirect') {
+      acc[cur] = query[cur]
     }
-    return acc;
-  }, {});
+    return acc
+  }, {})
 }
 
 watch(
   () => route.query,
   (query) => {
     if (query) {
-      state.redirect = query.redirect;
-      state.otherQuery = getOtherQuery(query);
+      state.redirect = query.redirect
+      state.otherQuery = getOtherQuery(query)
     }
   },
   { immediate: true }
-);
+)
 
 /*
  *  login relative
  * */
-let subLoading = $ref(false);
+let subLoading = $ref(false)
 //tip message
-let tipMessage = $ref("");
+let tipMessage = $ref('')
 //sub form
-const refLoginForm: FormInstance = $ref(null);
+const refLoginForm: FormInstance = $ref(null)
 
 function handleLogin() {
   refLoginForm.validate((valid) => {
     if (valid) {
-      subLoading = true;
-      loginFunc();
+      subLoading = true
+      loginFunc()
+    } else {
+      ElMessage.error('请检查输入是否正确')
     }
-    else {
-      ElMessage.error("请检查输入是否正确")
-    }
-  });
+  })
 }
 
-const router = useRouter();
-const basicStore = useBasicStore();
+const router = useRouter()
+const basicStore = useBasicStore()
 
 async function loginFunc() {
   try {
-    const data = await login(subForm);
-    elMessage("登录成功");
-    basicStore.setToken(data?.Authorization);
-    const role = await getMyRole();
+    const data = await login(subForm)
+    elMessage('登录成功')
+    basicStore.setToken(data?.Authorization)
+    const role = await getMyRole()
     basicStore.setUserInfo({
       userInfo: data,
       roles: [role.roleType],
       codes: [role.roleId]
-    });
+    })
     // router.push("/").catch(e => console.error(e));
     if (route.query?.redirect) {
-      let url = route.query.redirect as string;
-      if (viteSettings.viteBasePath.endsWith("/") && url.startsWith("/")) {
-        url = url.replace(/^\//, "");
+      let url = route.query.redirect as string
+      if (viteSettings.viteBasePath.endsWith('/') && url.startsWith('/')) {
+        url = url.replace(/^\//, '')
       }
-      window.location.href = viteSettings.viteBasePath + url;
+      window.location.href = viteSettings.viteBasePath + url
     } else {
-      window.location.href = viteSettings.viteBasePath;
+      window.location.href = viteSettings.viteBasePath
     }
   } catch (e: Error | any) {
-    tipMessage = e?.message;
+    tipMessage = e?.message
   } finally {
-    subLoading = false;
+    subLoading = false
   }
 }
 
 /*
  *  password show or hidden
  * */
-const passwordType = ref("password");
-const refPassword = ref<InputInstance>();
+const passwordType = ref('password')
+const refPassword = ref<InputInstance>()
 
 function showPwd() {
-  if (passwordType.value === "password") {
-    passwordType.value = "";
+  if (passwordType.value === 'password') {
+    passwordType.value = ''
   } else {
-    passwordType.value = "password";
+    passwordType.value = 'password'
   }
   nextTick(() => {
-    refPassword.value!.focus();
-  });
+    refPassword.value!.focus()
+  })
 }
 </script>
 <style lang="scss" scoped>
