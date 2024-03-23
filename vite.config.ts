@@ -1,9 +1,9 @@
 import { resolve } from 'path'
-import { defineConfig, loadEnv } from 'vite'
+import { ConfigEnv, defineConfig, loadEnv, ServerOptions, UserConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
-import { viteMockServe } from 'vite-plugin-mock'
+import { ViteMockOptions, viteMockServe } from 'vite-plugin-mock'
 import Components from 'unplugin-vue-components/vite'
 import UnoCSS from 'unocss/vite'
 import { presetAttributify, presetIcons, presetUno } from 'unocss'
@@ -16,7 +16,7 @@ import vitePluginSetupExtend from './src/plugins/vite-plugin-setup-extend'
 import vitePluginVueSetupExtend from 'vite-plugin-vue-setup-extend'
 // import { visualizer } from 'rollup-plugin-visualizer'
 const pathSrc = resolve(__dirname, 'src')
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   //const env = loadEnv(mode, process.cwd(), '') //获取环境变量
   return {
     base: setting.viteBasePath,
@@ -31,6 +31,7 @@ export default defineConfig(({ command, mode }) => {
       port: 5005, // 类型： number 指定服务器端口;
       open: false, // 类型： boolean | string在服务器启动时自动在浏览器中打开应用程序；
       host: true,
+      // @ts-ignore
       https: false
     },
     preview: {
@@ -65,7 +66,7 @@ export default defineConfig(({ command, mode }) => {
           setupProdMockServer();
         `,
         logger: true
-      }),
+      } as ViteMockOptions),
       // VueSetupExtend(),using  DefineOptions instant of it
       //https://github.com/antfu/unplugin-auto-import/blob/HEAD/src/types.ts
       Components({
