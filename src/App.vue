@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { onBeforeMount, onMounted } from 'vue'
 //element-plus lang
-import zh from 'element-plus/lib/locale/lang/zh-cn'
+import zh from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useRoute } from 'vue-router'
