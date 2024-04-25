@@ -1,7 +1,6 @@
-import packageJson from '../package.json'
 import type { SettingsConfig } from '~/basic'
 export const settings: SettingsConfig = {
-  title: packageJson.name,
+  title: '洛洛希雅的小网站',
   /**
    * @type {boolean} true | false
    * @description Whether show the logo in sidebar

@@ -1,8 +1,8 @@
 <template>
   <div class="login-container columnCE">
-    <div class="login-hero">
-      <img src="@/assets/layout/login.svg" :alt="settings.title" />
-    </div>
+    <!--    <div class="login-hero">-->
+    <!--      <img src="@/assets/layout/login.svg" :alt="settings.title" />-->
+    <!--    </div>-->
     <el-form ref="refLoginForm" class="login-form" :model="subForm" :rules="formRules">
       <div class="title-container">
         <h3 class="title text-center">{{ settings.title }}</h3>
@@ -32,7 +32,7 @@
         </span>
       </el-form-item>
       <div class="tip-message">{{ tipMessage }}</div>
-      <el-button :loading="subLoading" type="primary" class="login-btn" size="default" @click.prevent="handleLogin">
+      <el-button :loading="subLoading" color="#E3B4D0" class="login-btn" size="default" @click.prevent="handleLogin">
         登录
       </el-button>
     </el-form>
@@ -163,14 +163,19 @@ $light_gray: #eee;
   overflow-y: hidden;
   width: 100%;
   background-color: $bg;
+  background-image: url('./1712042358737.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position-x: right;
+  background-position-y: center;
 
   .login-form {
     width: 360px;
     padding: 40px 30px;
-    background: #fff;
+    background: #fff6;
     box-shadow: 0 4px 16px rgba(4, 61, 175, 0.15);
     border-radius: 8px;
-    margin-right: 20vw;
+    margin-right: 10vw;
     z-index: 10;
     @media screen and (min-width: 769px) and (max-width: 992px) {
       margin-right: 10vw;
@@ -184,7 +189,7 @@ $light_gray: #eee;
   .title-container {
     .title {
       font-size: 18px;
-      color: $dark_gray;
+      color: white;
       margin: 0 auto 25px auto;
       text-align: center;
       font-weight: bold;
@@ -261,7 +266,7 @@ $light_gray: #eee;
 
   .el-form-item {
     border: 1px solid #e0e0e0;
-    background: #fff;
+    background: #fffb;
     border-radius: 4px;
     color: #999;
 
