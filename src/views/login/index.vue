@@ -36,6 +36,11 @@
         登录
       </el-button>
     </el-form>
+    <div class="icp">
+      鲁ICP备
+      <s>1145141919号-810</s>
+    </div>
+    <div class="copyright">© 2024 洛洛希雅Lolosia</div>
   </div>
 </template>
 
@@ -166,8 +171,8 @@ $light_gray: #eee;
   background-image: url('./1712042358737.jpg');
   background-repeat: no-repeat;
   background-size: cover;
-  background-position-x: right;
-  background-position-y: center;
+  background-position-x: 65%;
+  background-position-y: 75%;
 
   .login-form {
     width: 360px;
@@ -194,6 +199,20 @@ $light_gray: #eee;
       text-align: center;
       font-weight: bold;
     }
+  }
+
+  .icp {
+    position: absolute;
+    bottom: 0.5em;
+    left: 2em;
+    color: #fffb;
+  }
+
+  .copyright {
+    position: absolute;
+    bottom: 0.5em;
+    right: 2em;
+    color: #fffb;
   }
 }
 
