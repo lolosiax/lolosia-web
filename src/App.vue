@@ -12,7 +12,6 @@ import { storeToRefs } from 'pinia/dist/pinia'
 import { useRoute } from 'vue-router'
 import { useBasicStore } from '@/store/basic'
 import { useConfigStore } from '@/store/config'
-import { useErrorLog } from '@/hooks/use-error-log'
 
 //reshow default setting
 import { toggleHtmlClass } from '@/theme/utils'
@@ -23,10 +22,6 @@ const { size, language } = storeToRefs(useConfigStore())
 onBeforeMount(() => {
   //set tmp token when setting isNeedLogin false
   if (!settings.value.isNeedLogin) useBasicStore().setToken(settings.value.tmpToken)
-})
-onMounted(() => {
-  //lanch the errorLog collection
-  useErrorLog()
 })
 const route = useRoute()
 onMounted(() => {
