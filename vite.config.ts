@@ -127,9 +127,9 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       assetsDir: 'static/assets',
       rollupOptions: {
         output: {
-          chunkFileNames: 'static/js/[name]-[hash].js',
-          entryFileNames: 'static/js/[name]-[hash].js',
-          assetFileNames: 'static/[ext]/[name]-[hash].[ext]'
+          chunkFileNames: 'static/js/chunk-[hash].js',
+          entryFileNames: 'static/js/index.js',
+          assetFileNames: 'static/[ext]/[hash].[ext]'
         }
       }
     },
