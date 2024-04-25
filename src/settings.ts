@@ -87,7 +87,7 @@ export const settings: SettingsConfig = {
   /*
    * vite.config.js base config
    * */
-  viteBasePath: '/vue-admin-plus/',
+  viteBasePath: '/home/',
 
   /*
    * i18n setting default language

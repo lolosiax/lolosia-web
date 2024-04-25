@@ -106,10 +106,10 @@ async function main() {
   //  await exec(`unzip -O gbk ${archivePath} -d ${target}`)
   //} else {
   await exec(`unzip ${archivePath} -d ${target}`)
-  await exec(`mv ${target}/dist ${target}/iGame`)
+  await exec(`mv ${target}/dist ${target}/home`)
   //}
 
-  const nginxTarget = '/home/lolosia/nginx/home'
+  const nginxTarget = '/home/lolosia/nginx'
 
   console.log('移除旧目录 ...')
   await sudo(`rm -rf ${nginxTarget}/${nginxContentPath}`)

@@ -19,6 +19,7 @@
     "vitest": "vitest --ui",
     "tsc-check": "tsc",
     "coverage": "vitest run --coverage",
+    "deploy": "node deploy.js",
     "preinstall": "only-allow pnpm"
   },
   "dependencies": {
