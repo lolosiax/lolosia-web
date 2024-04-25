@@ -1,6 +1,6 @@
 import { resolve } from 'path'
 import { ConfigEnv, defineConfig, loadEnv, ServerOptions, UserConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import vue, { parseVueRequest } from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 import { ViteMockOptions, viteMockServe } from 'vite-plugin-mock'
@@ -94,13 +94,33 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       }),
 
       vitePluginSetupExtend({ inject: { title: setting.title } }),
-      vitePluginVueSetupExtend()
+      vitePluginVueSetupExtend(),
       //依赖分析插件
       // visualizer({
       //   open: true,
       //   gzipSize: true,
       //   brotliSize: true
       // })
+
+      {
+        name: 'index-transform',
+        transform(code, id) {
+          const { filename } = parseVueRequest(id)
+          if (!filename.includes('vite/preload-helper')) return code
+          const fn = 'export const __vitePreload'
+          const index = code.indexOf(fn)
+          const head = code
+            .slice(0, index)
+            .split(';')
+            .map((it) => `${it};`)
+          const preload = code.slice(index)
+          const assetsURLIndex = head.findIndex((it) => it.startsWith('const assetsURL'))
+          let assetsURL = head[assetsURLIndex]
+          assetsURL = assetsURL.replace(' return ', " return (window.NGINX_BASE_URL || '') + ")
+          head[assetsURLIndex] = assetsURL
+          return [...head, preload].join('\n')
+        }
+      }
     ],
     build: {
       chunkSizeWarningLimit: 10000, //消除触发警告的 chunk, 默认500k

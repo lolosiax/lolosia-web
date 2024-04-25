@@ -50,3 +50,4 @@ pnpm*
 #components.d.ts
 stats.html
 ts-out-dir
+platform.json
