@@ -62,10 +62,21 @@ service.interceptors.response.use(
 )
 
 export const baseUrl: string = (() => {
-  let port = import.meta.env.VITE_APP_BASE_URL
-  if (/:\d{1,5}/.test(port)) port = port.match(/(?<port>:\d{1,5})/)?.groups?.port ?? ''
-  else port = `:${location.port}`
-  return `${location.protocol}//${location.hostname}${port}`
+  if (window.NGINX_BASE_URL) return window.NGINX_BASE_URL
+
+  const mode = import.meta.env.VITE_APP_BASE_MODE
+  if (mode === 'port') {
+    const port = import.meta.env.VITE_APP_BASE_PORT || location.port
+    return `${location.protocol}//${location.hostname}:${port}`
+  }
+  if (mode === 'url') {
+    let url = import.meta.env.VITE_APP_BASE_URL
+    if (!url) url = `${location.protocol}//${location.host}`
+    return url
+  }
+
+  //local
+  return `${location.protocol}//${location.host}`
 })()
 
 //导出service实例给页面调用 , config->页面的配置

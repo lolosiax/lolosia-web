@@ -9,5 +9,9 @@ declare global {
   interface ImportMeta {
     readonly env: ImportMetaEnv
   }
+
+  interface Window {
+    readonly NGINX_BASE_URL: string | undefined
+  }
 }
 export {}
