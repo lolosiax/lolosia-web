@@ -5,7 +5,7 @@ import logo from '@/icons/common/sidebar-logo.svg?url'
 import settings from '@/settings'
 
 document.querySelector('#app')!.innerHTML = `
-<div class="__init__">
+<div class="__init__" style="display: none">
   <link id="__init__" rel="stylesheet" href="${css}" />
   <div class="__init__image">
     <img src="${logo}" alt="" />
