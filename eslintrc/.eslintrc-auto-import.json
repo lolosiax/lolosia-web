@@ -114,6 +114,7 @@
     "Ref": true,
     "VNode": true,
     "WritableComputedRef": true,
-    "toValue": true
+    "toValue": true,
+    "filterRouters": true
   }
 }

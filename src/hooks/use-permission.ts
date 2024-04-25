@@ -1,22 +1,36 @@
-import NProgress from 'nprogress'
-import type { RouteRecordName } from 'vue-router'
-import Layout from '@/layout/default/index.vue'
 import router, { asyncRoutes, constantRoutes } from '@/router'
-import 'nprogress/nprogress.css'
 import { useBasicStore } from '@/store/basic'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+import type { RouteRecordName } from 'vue-router'
 import { isArray } from 'xe-utils'
+import type { RouterTypes } from '~/basic'
+
+export function filterRouters<
+  T extends {
+    meta?: { roles?: string[] }
+    children?: T[]
+  }
+>(menuList: T[], role: string) {
+  const out = menuList.filter((it) => it.meta?.roles?.includes(role) ?? true)
+  for (const t of out) {
+    if (t.children) filterRouters(t.children, role)
+  }
+  menuList.length = 0
+  menuList.push(...out)
+}
 
 //从数据库设置文本路由
 export function setRouterFromDatabase(menuList) {
   const basicStore = useBasicStore()
-  const accessRoutes = menuList
+  const accessRoutes: RouterTypes = menuList
 
   // @ts-ignore
   const views = import.meta.glob('../views/**/*.vue') as Record<string, () => Promise<Component>>
 
   function scanRouter(items: any[]) {
     for (const item of items) {
-      if (item.component === 'Layout') item.component = async () => Layout
+      if (item.component === 'Layout') item.component = () => import('@/layout/default/index.vue')
       else if (typeof item.component === 'string') {
         let url: string = item.component
         if (url.startsWith('@/')) {
@@ -39,6 +53,7 @@ export function setRouterFromDatabase(menuList) {
   }
 
   scanRouter(accessRoutes)
+
   accessRoutes.forEach((route) => router.addRoute(route))
   asyncRoutes.forEach((item) => router.addRoute(item))
   basicStore.setFilterAsyncRoutes(accessRoutes)

@@ -19,6 +19,7 @@ export interface IUserRole {
   roleId: number
   roleName: string
   roleType: string
+  type: string
 }
 
 export async function getMyInfo(): Promise<IUser> {

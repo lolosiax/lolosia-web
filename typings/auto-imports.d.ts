@@ -27,6 +27,7 @@ declare global {
   const elLoading: typeof import('../src/hooks/use-element')['elLoading']
   const elMessage: typeof import('../src/hooks/use-element')['elMessage']
   const elNotify: typeof import('../src/hooks/use-element')['elNotify']
+  const filterRouters: typeof import('../src/hooks/use-permission')['filterRouters']
   const freshRouter: typeof import('../src/hooks/use-permission')['freshRouter']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
