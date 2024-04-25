@@ -109,13 +109,13 @@ async function main() {
   await exec(`mv ${target}/dist ${target}/home`)
   //}
 
-  const nginxTarget = '/home/lolosia/nginx'
+  const nginxTarget = '/usr/share/nginx/html'
 
   console.log('移除旧目录 ...')
   await sudo(`rm -rf ${nginxTarget}/${nginxContentPath}`)
 
   console.log('复制文件 到指定目录 ...')
-  await sudo(`cp -r -f ${target}/* ${nginxTarget}`)
+  await sudo(`cp -r -f ${target}/* ${nginxTarget}/home`)
   await new Promise((r) => {
     dialog.info(`你现在可以关闭终端，去做其他事情了`, `${nginxContentPath}项目部署完成！`, r)
   })
