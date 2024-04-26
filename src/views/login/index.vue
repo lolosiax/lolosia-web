@@ -57,13 +57,10 @@ import { getMyRole, login } from '@/api/user'
 import type { FormInstance, InputInstance } from 'element-plus'
 import { settings as viteSettings } from '@/settings'
 import { ElMessage } from 'element-plus'
-import moment from 'moment'
 
 const buildEnv = (() => {
-  let time = import.meta.env.VITE_BUILD_TIMESTAMP
+  const time = import.meta.env.VITE_BUILD_TIMESTAMP
   if (!time) return null
-  const date = new Date(Number.parseInt(time))
-  time = `${moment(date).format('YYYY-mm-dd HH:mm:ss')} GMT+8`
   const build = import.meta.env.VITE_BUILD_DISPLAY_NAME
   const hash = (import.meta.env.VITE_GIT_COMMIT || '').slice(0, 8)
   return `构建 ${build} ${hash} ${time}`
