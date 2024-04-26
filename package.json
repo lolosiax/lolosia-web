@@ -33,6 +33,7 @@
     "hash.js": "^1.1.7",
     "js-error-collection": "^1.0.8",
     "mitt": "3.0.1",
+    "moment": "^2.30.1",
     "moment-mini": "2.29.4",
     "mqtt": "^5.5.0",
     "nprogress": "0.2.0",

@@ -11,7 +11,7 @@ import mkcert from 'vite-plugin-mkcert'
 import AutoImport from 'unplugin-auto-import/vite'
 import setting from './src/settings'
 import ReactivityTransform from '@vue-macros/reactivity-transform/vite'
-const prodMock = setting.openProdMock
+// const prodMock = setting.openProdMock
 import vitePluginSetupExtend from './src/plugins/vite-plugin-setup-extend'
 import vitePluginVueSetupExtend from 'vite-plugin-vue-setup-extend'
 // import { visualizer } from 'rollup-plugin-visualizer'
@@ -25,6 +25,8 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       GLOBAL_STRING: JSON.stringify('i am global var from vite.config.js define'),
       GLOBAL_VAR: { test: 'i am global var from vite.config.js define' }
     },
+    // Vite 和 Jenkins 的环境变量
+    envPrefix: ['VITE_', 'TAG_', 'BUILD_', 'BRANCH_', 'CHANGE_', 'JOB_', 'RUN_', 'GIT_'],
     clearScreen: false, //设为 false 可以避免 Vite 清屏而错过在终端中打印某些关键信息
     server: {
       //hmr: { overlay: false }, //设置 server.hmr.overlay 为 false 可以禁用开发服务器错误的屏蔽。方便错误查看

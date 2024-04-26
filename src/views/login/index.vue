@@ -39,6 +39,10 @@
     <div class="icp">
       鲁ICP备
       <s>1145141919号-810</s>
+      <template v-if="buildEnv">
+        <br />
+        {{ buildEnv }}
+      </template>
     </div>
     <div class="copyright">© 2024 洛洛希雅Lolosia</div>
   </div>
@@ -53,6 +57,17 @@ import { getMyRole, login } from '@/api/user'
 import type { FormInstance, InputInstance } from 'element-plus'
 import { settings as viteSettings } from '@/settings'
 import { ElMessage } from 'element-plus'
+import moment from 'moment'
+
+const buildEnv = (() => {
+  let time = import.meta.env.TAG_TIMESTAMP
+  if (!time) return null
+  const date = new Date(Number.parseInt(time))
+  time = `${moment(date).format('YYYY-mm-dd HH:mm:ss')} GMT+8`
+  const build = import.meta.env.BUILD_DISPLAY_NAME
+  const hash = import.meta.env.GIT_COMMIT
+  return `构建 ${build} ${hash} ${time}`
+})()
 
 /* listen router change and set the query  */
 const { settings } = useBasicStore()
