@@ -65,7 +65,7 @@ const buildEnv = (() => {
   const date = new Date(Number.parseInt(time))
   time = `${moment(date).format('YYYY-mm-dd HH:mm:ss')} GMT+8`
   const build = import.meta.env.BUILD_DISPLAY_NAME
-  const hash = import.meta.env.GIT_COMMIT
+  const hash = (import.meta.env.GIT_COMMIT || '').slice(0, 8)
   return `构建 ${build} ${hash} ${time}`
 })()
 

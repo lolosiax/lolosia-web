@@ -23,10 +23,11 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     define: {
       //define global var
       GLOBAL_STRING: JSON.stringify('i am global var from vite.config.js define'),
-      GLOBAL_VAR: { test: 'i am global var from vite.config.js define' }
+      GLOBAL_VAR: { test: 'i am global var from vite.config.js define' },
+      'import.meta.env.TAG_TIMESTAMP': process.env.TAG_TIMESTAMP,
+      'import.meta.env.BUILD_DISPLAY_NAME': process.env.BUILD_DISPLAY_NAME,
+      'import.meta.env.GIT_COMMIT': process.env.GIT_COMMIT
     },
-    // Vite 和 Jenkins 的环境变量
-    envPrefix: ['VITE_', 'TAG_', 'BUILD_', 'BRANCH_', 'CHANGE_', 'JOB_', 'RUN_', 'GIT_'],
     clearScreen: false, //设为 false 可以避免 Vite 清屏而错过在终端中打印某些关键信息
     server: {
       //hmr: { overlay: false }, //设置 server.hmr.overlay 为 false 可以禁用开发服务器错误的屏蔽。方便错误查看
