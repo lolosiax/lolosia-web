@@ -23,10 +23,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     define: {
       //define global var
       GLOBAL_STRING: JSON.stringify('i am global var from vite.config.js define'),
-      GLOBAL_VAR: { test: 'i am global var from vite.config.js define' },
-      'import.meta.env.TAG_TIMESTAMP': JSON.stringify(process.env.TAG_TIMESTAMP),
-      'import.meta.env.BUILD_DISPLAY_NAME': JSON.stringify(process.env.BUILD_DISPLAY_NAME),
-      'import.meta.env.GIT_COMMIT': JSON.stringify(process.env.GIT_COMMIT)
+      GLOBAL_VAR: { test: 'i am global var from vite.config.js define' }
     },
     clearScreen: false, //设为 false 可以避免 Vite 清屏而错过在终端中打印某些关键信息
     server: {
