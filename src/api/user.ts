@@ -32,6 +32,16 @@ export async function getMyRole(): Promise<IUserRole> {
 
 //登录
 export async function login(data): Promise<IUser> {
+  if (import.meta.env.VITE_BUILD_TIMESTAMP) {
+    // 此登录请求走https接口
+    return request({
+      baseURL: 'https://lolosia.top/home/api/',
+      url: '/logout',
+      method: 'post',
+      responseType: 'json',
+      data
+    }).then((it) => it.data)
+  }
   return post('/login', data)
 }
 
