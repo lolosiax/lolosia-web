@@ -14,6 +14,7 @@ import ReactivityTransform from '@vue-macros/reactivity-transform/vite'
 // const prodMock = setting.openProdMock
 import vitePluginSetupExtend from './src/plugins/vite-plugin-setup-extend'
 import vitePluginVueSetupExtend from 'vite-plugin-vue-setup-extend'
+import packageJson from './package.json'
 // import { visualizer } from 'rollup-plugin-visualizer'
 const pathSrc = resolve(__dirname, 'src')
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
@@ -23,7 +24,8 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     define: {
       //define global var
       GLOBAL_STRING: JSON.stringify('i am global var from vite.config.js define'),
-      GLOBAL_VAR: { test: 'i am global var from vite.config.js define' }
+      GLOBAL_VAR: { test: 'i am global var from vite.config.js define' },
+      'import.meta.env.PROJECT_VERSION': JSON.stringify(packageJson.version)
     },
     clearScreen: false, //设为 false 可以避免 Vite 清屏而错过在终端中打印某些关键信息
     server: {

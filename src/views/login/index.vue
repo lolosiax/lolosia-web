@@ -60,10 +60,14 @@ import { ElMessage } from 'element-plus'
 
 const buildEnv = (() => {
   const time = import.meta.env.VITE_BUILD_TIMESTAMP
-  if (!time) return null
-  const build = import.meta.env.VITE_BUILD_DISPLAY_NAME
-  const hash = (import.meta.env.VITE_GIT_COMMIT || '').slice(0, 8)
-  return `构建 ${build} ${hash} ${time}`
+  const version = import.meta.env.PROJECT_VERSION
+  if (time) {
+    const build = import.meta.env.VITE_BUILD_DISPLAY_NAME
+    const hash = (import.meta.env.VITE_GIT_COMMIT || '').slice(0, 8)
+    return `当前版本 ${version}-${hash} 构建 ${build} 于 ${time}`
+  } else {
+    return `版本 ${version}-dev`
+  }
 })()
 
 /* listen router change and set the query  */
