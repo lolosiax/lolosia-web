@@ -57,16 +57,16 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         symbolId: 'icon-[dir]-[name]'
       }),
       //https://github.com/anncwb/vite-plugin-mock/blob/HEAD/README.zh_CN.md
-      viteMockServe({
-        mockPath: 'mock',
-        localEnabled: command === 'serve',
-        prodEnabled: prodMock,
-        injectCode: `
-          import { setupProdMockServer } from '../mock-prod-server';
-          setupProdMockServer();
-        `,
-        logger: true
-      } as ViteMockOptions),
+      // viteMockServe({
+      //   mockPath: 'mock',
+      //   localEnabled: command === 'serve',
+      //   prodEnabled: prodMock,
+      //   injectCode: `
+      //     import { setupProdMockServer } from '../mock-prod-server';
+      //     setupProdMockServer();
+      //   `,
+      //   logger: true
+      // } as ViteMockOptions),
       // VueSetupExtend(),using  DefineOptions instant of it
       //https://github.com/antfu/unplugin-auto-import/blob/HEAD/src/types.ts
       Components({

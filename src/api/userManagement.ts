@@ -1,42 +1,17 @@
-import request from '@/utils/request'
+import { post } from '@/utils/request'
 
 export function getList(data) {
-  return request({
-    url: '/user/list',
-    method: 'post',
-    data
-  })
+  return post('/api/user/list', data)
 }
 
 export function doEdit(data) {
-  return request({
-    url: '/user/edit',
-    method: 'post',
-    data
-  })
+  return post('/api/user/edit', data)
 }
 
 export function doCreate(data) {
-  return request({
-    url: '/user/create',
-    method: 'post',
-    data
-  })
+  return post('/api/user/create', data)
 }
 
 export function doDelete(data) {
-  return request({
-    url: '/user/delete',
-    method: 'post',
-    data
-  })
-}
-
-// 查询学生信息
-export function getStudentInfoByStudentId(data) {
-  return request({
-    url: '/user/getStudentInfoByStudentId',
-    method: 'post',
-    data
-  })
+  return post('/api/user/delete', data)
 }
