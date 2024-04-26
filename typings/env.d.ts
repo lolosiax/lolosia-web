@@ -4,7 +4,7 @@ declare global {
     readonly VITE_APP_BASE_URL: string
     readonly VITE_APP_BASE_PORT: number
     readonly VITE_APP_ENV: 'prod' | 'test' | 'dev'
-    readonly VITE_TAG_TIMESTAMP: string
+    readonly VITE_BUILD_TIMESTAMP: string
     readonly VITE_BUILD_DISPLAY_NAME: string
     readonly VITE_GIT_COMMIT: string
     // 更多环境变量...

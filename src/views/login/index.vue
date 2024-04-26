@@ -60,7 +60,7 @@ import { ElMessage } from 'element-plus'
 import moment from 'moment'
 
 const buildEnv = (() => {
-  let time = import.meta.env.VITE_TAG_TIMESTAMP
+  let time = import.meta.env.VITE_BUILD_TIMESTAMP
   if (!time) return null
   const date = new Date(Number.parseInt(time))
   time = `${moment(date).format('YYYY-mm-dd HH:mm:ss')} GMT+8`
