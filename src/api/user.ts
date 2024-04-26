@@ -36,7 +36,7 @@ export async function login(data): Promise<IUser> {
     // 此登录请求走https接口
     return request({
       baseURL: 'https://www.lolosia.top/home/api/',
-      url: '/logout',
+      url: '/login',
       method: 'post',
       responseType: 'json',
       data
