@@ -61,7 +61,7 @@ service.interceptors.response.use(
   }
 )
 
-export const baseUrl: string = (() => {
+function getRoot() {
   if (window.NGINX_BASE_URL) return window.NGINX_BASE_URL
 
   const mode = import.meta.env.VITE_APP_BASE_MODE
@@ -77,7 +77,9 @@ export const baseUrl: string = (() => {
 
   //local
   return `${location.protocol}//${location.host}`
-})()
+}
+
+export const baseUrl: string = `${getRoot()}/home/api/`
 
 //导出service实例给页面调用 , config->页面的配置
 export default function request(config: AxiosRequestConfig) {

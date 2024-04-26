@@ -1,17 +1,17 @@
 import { post } from '@/utils/request'
 
 export function getList(data) {
-  return post('/api/user/list', data)
+  return post('/user/list', data)
 }
 
 export function doEdit(data) {
-  return post('/api/user/edit', data)
+  return post('/user/edit', data)
 }
 
 export function doCreate(data) {
-  return post('/api/user/create', data)
+  return post('/user/create', data)
 }
 
 export function doDelete(data) {
-  return post('/api/user/delete', data)
+  return post('/user/delete', data)
 }

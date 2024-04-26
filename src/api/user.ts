@@ -23,29 +23,29 @@ export interface IUserRole {
 }
 
 export async function getMyInfo(): Promise<IUser> {
-  return post<IUser>('/api/user/myInfo')
+  return post<IUser>('/user/myInfo')
 }
 
 export async function getMyRole(): Promise<IUserRole> {
-  return post('/api/user/myRole')
+  return post('/user/myRole')
 }
 
 //登录
 export async function login(data): Promise<IUser> {
-  return post('/api/login', data)
+  return post('/login', data)
 }
 
 //退出登录
 export async function logout(): Promise<void> {
-  return post('/api/logout')
+  return post('/logout')
 }
 
 export async function getUser(idList): Promise<IUser[]> {
-  return post('/api/user/get', { idList })
+  return post('/user/get', { idList })
 }
 
 export async function editUser(data: IUser) {
-  return post('/api/user/edit', data)
+  return post('/user/edit', data)
 }
 
 /**
@@ -54,12 +54,12 @@ export async function editUser(data: IUser) {
  * @return {Promise<any[]>}
  */
 export function userSearching(keys) {
-  return post('/api/user/searching', { keys })
+  return post('/user/searching', { keys })
 }
 
 //修改密码
 export function updatePassword(data: { id?; origin; target; session? }) {
-  return post('/api/user/updatePassword', data)
+  return post('/user/updatePassword', data)
 }
 
 //修改密码
@@ -67,7 +67,7 @@ export function setAvatar(id: string, avatar: Blob) {
   const form = new FormData()
   form.append('file', avatar, avatar instanceof File ? avatar.name : `${id}.jpg`)
   return request({
-    url: `/api/user/avatar`,
+    url: `/user/avatar`,
     params: { id },
     method: 'put',
     data: form
@@ -77,7 +77,7 @@ export function setAvatar(id: string, avatar: Blob) {
 //修改密码
 export function getAvatar(id: string): Promise<Blob> {
   return request({
-    url: `/api/user/avatar?id=${id}`,
+    url: `/user/avatar?id=${id}`,
     responseType: 'blob',
     headers: {
       'Cache-Control': 'no-cache'
