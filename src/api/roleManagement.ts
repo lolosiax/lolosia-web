@@ -1,4 +1,4 @@
-import request, { post } from '@/utils/request'
+import { post } from '@/utils/request'
 
 export function getList(data) {
   return post('/api/role/queryRoleByPage', data)
