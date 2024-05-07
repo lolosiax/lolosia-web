@@ -1,4 +1,31 @@
-export type DataLibContent = Array<Array<any>>
+export interface DriveStruct {
+  ptcType: 'motor' | 'non-motor'
+  ptcId: number
+  global_track_id: string
+  timeStamp: number
+  secMark: number
+  pos_lat: number
+  pos_lon: number
+  heading: number
+  source: number
+  width: number
+  length: number
+  height: number
+  speed: number
+  lane: number
+  x: number
+  y: number
+}
+
+export type DeviceStruct = {
+  content: Array<DriveStruct>
+  dev_pos: {
+    lat: number
+    lon: number
+  }
+}
+
+export type DataLibContent = Array<Array<DeviceStruct>>
 
 export interface DataLib {
   data: () => Promise<DataLibContent>
@@ -10,7 +37,7 @@ async function importLib(url: string) {
   const url1 = `${baseUrl}/home${url}`
   const resp = await fetch(url1)
   if (!resp.ok) {
-    throw new Error(resp.text())
+    throw new Error(await resp.text())
   }
   return resp.json()
 }

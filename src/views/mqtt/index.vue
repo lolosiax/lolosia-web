@@ -19,7 +19,17 @@ const password = $toRef(mqttStore, 'password')
 const clientId = $toRef(mqttStore, 'clientId')
 
 let loading = $ref(false)
-let status = $ref(false)
+const publishing = reactive({
+  status: false,
+  index: 0,
+  count: 1,
+  startTime: 0,
+  startTimestamp: 0,
+  lastTime: 0,
+  lastTimestamp: 0,
+  onlineCars: 0,
+  percentage: 0
+})
 const active = $ref('CLC_track')
 
 function connect() {
@@ -29,11 +39,11 @@ function connect() {
     clientId
   })
   mqttClient.on('connect', (it) => {
-    status = true
+    publishing.status = true
   })
 
   mqttClient.on('error', (it) => {
-    status = false
+    publishing.status = false
     console.error(it)
   })
 }
@@ -42,7 +52,7 @@ async function disconnect() {
   jobCancel.value?.()
   await mqttClient?.endAsync()
   mqttClient = null
-  status = false
+  publishing.status = false
 }
 
 async function publish() {
@@ -50,6 +60,8 @@ async function publish() {
   try {
     loading = true
     jsonModule = await (dataLib[active] as DataLib).data()
+    loading = false
+    // @ts-ignore
   } catch (e: Error) {
     loading = false
     console.error(e)
@@ -58,15 +70,33 @@ async function publish() {
   }
   const list = jsonModule
   let i = 0
-  const next = () => list[(i = i++ % list.length)]
+  function next() {
+    i++
+    if (i >= list.length) i = 0
+    return list[i]
+  }
   ;(async () => {
     let exit = false
     jobCancel.value = () => {
       exit = true
       jobCancel.value = null
+      publishing.startTimestamp = 0
     }
+    publishing.startTime = Date.now()
+    publishing.count = list.length
     while (!exit) {
       const item = next()
+      publishing.lastTime = Date.now()
+      if (item[0]?.content[0]) {
+        publishing.lastTimestamp = item[0].content[0].timeStamp
+        if (publishing.startTimestamp === 0) {
+          publishing.startTimestamp = publishing.lastTimestamp
+        }
+      }
+      publishing.onlineCars = item[0]?.content?.length ?? 0
+      publishing.index = i
+      publishing.percentage = Number(((publishing.index / (publishing.count | 1)) * 100).toFixed(2))
+
       const json = JSON.stringify(item)
       mqttClient!.publish(topic, json, {})
 
@@ -77,7 +107,7 @@ async function publish() {
 </script>
 
 <template>
-  <el-container>
+  <el-container v-loading="loading">
     <el-aside width="500px">
       <div class="mqtt-title-frame">
         <router-link to="/" class="el-button el-button--primary el-button--small">返回</router-link>
@@ -115,11 +145,32 @@ async function publish() {
         <el-form-item label="密码">
           <el-input v-model="password" />
         </el-form-item>
+        <el-form-item v-if="jobCancel" label="状态">
+          <el-descriptions border direction="vertical">
+            <el-descriptions-item label="进度">{{ publishing.index }} / {{ publishing.count }}</el-descriptions-item>
+            <el-descriptions-item label="运行时间">
+              {{ (publishing.lastTime - publishing.startTime) / 1000 }} 秒
+            </el-descriptions-item>
+            <el-descriptions-item label="数据运行时间">
+              {{ (publishing.lastTimestamp - publishing.startTimestamp) / 1000 }} 秒
+            </el-descriptions-item>
+            <el-descriptions-item label="数据起始时间戳">
+              {{ publishing.startTimestamp }}
+            </el-descriptions-item>
+            <el-descriptions-item label="数据当前时间戳">
+              {{ publishing.lastTimestamp }}
+            </el-descriptions-item>
+            <el-descriptions-item label="活跃车辆">
+              {{ publishing.onlineCars }}
+            </el-descriptions-item>
+          </el-descriptions>
+          <el-progress flex-grow text-inside stroke-width="20" :percentage="publishing.percentage" />
+        </el-form-item>
         <el-form-item>
-          <el-button v-if="!status" type="primary" @click="connect">连接</el-button>
+          <el-button v-if="!publishing.status" type="primary" @click="connect">连接</el-button>
           <el-button v-else type="danger" @click="disconnect">断开</el-button>
-          <el-button v-if="!jobCancel" type="primary" :disabled="!status" @click="publish">发送</el-button>
-          <el-button v-else type="danger" :disabled="!status" @click="() => jobCancel?.()">停止</el-button>
+          <el-button v-if="!jobCancel" type="primary" :disabled="!publishing.status" @click="publish">发送</el-button>
+          <el-button v-else type="danger" :disabled="!publishing.status" @click="() => jobCancel?.()">停止</el-button>
         </el-form-item>
       </el-form>
     </el-main>
@@ -161,6 +212,10 @@ async function publish() {
       user-select: none;
       cursor: pointer;
 
+      &:nth-child(2n) {
+        background-color: #88888822;
+      }
+
       &:hover {
         background-color: var(--el-color-primary-light-7);
       }
@@ -169,6 +224,7 @@ async function publish() {
         background-color: var(--el-color-primary);
         color: white;
         border-radius: 5px;
+        font-weight: 800;
       }
     }
   }
