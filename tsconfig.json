@@ -4,7 +4,8 @@
     "paths": {
       "@/*": ["src/*"],
       "~/*": ["typings/*"]
-    }
+    },
+    "types": ["@vue-macros/reactivity-transform/macros-global"]
   },
   "include": ["src", "typings"],
   "exclude": ["node_modules", "**/dist"]

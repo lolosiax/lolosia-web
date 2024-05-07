@@ -96,6 +96,7 @@ declare global {
   const useDebuggerStore: typeof import('../src/store/debuger')['useDebuggerStore']
   const useElement: typeof import('../src/hooks/use-element')['useElement']
   const useLink: typeof import('vue-router')['useLink']
+  const useMqttStore: typeof import('../src/store/mqtt')['useMqttStore']
   const useRoute: typeof import('vue-router')['useRoute']
   const useRouter: typeof import('vue-router')['useRouter']
   const useSlots: typeof import('vue')['useSlots']

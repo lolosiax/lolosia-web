@@ -36,6 +36,12 @@
         登录
       </el-button>
     </el-form>
+    <div class="link">
+      <div>快捷方式</div>
+      <a href="/gitea/">Gitea</a>
+      <a href="/jenkins/">Jenkins</a>
+      <router-link to="/mqtt">V2X-MQTT</router-link>
+    </div>
     <div class="icp">
       鲁ICP备
       <s>1145141919号-810</s>
@@ -204,6 +210,32 @@ $light_gray: #eee;
     @media only screen and (max-width: 768px) {
       margin-right: auto;
       margin-left: auto;
+    }
+  }
+
+  .link {
+    padding: 10px 30px;
+    background: #fff6;
+    box-shadow: 0 4px 16px rgba(4, 61, 175, 0.15);
+    border-radius: 8px;
+    position: absolute;
+    left: 15px;
+    top: 10px;
+    color: white;
+    display: flex;
+    align-items: center;
+    div {
+      font-size: 18px;
+      font-weight: bold;
+      display: inline-block;
+      margin-right: 1em;
+    }
+    a {
+      background-color: #ffffffaa;
+      color: #1f294a;
+      padding: 0.3em 0.5em;
+      margin-right: 0.5em;
+      border-radius: 0.3em;
     }
   }
 

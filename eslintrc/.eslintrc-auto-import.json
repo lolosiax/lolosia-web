@@ -115,6 +115,7 @@
     "VNode": true,
     "WritableComputedRef": true,
     "toValue": true,
-    "filterRouters": true
+    "filterRouters": true,
+    "useMqttStore": true
   }
 }
