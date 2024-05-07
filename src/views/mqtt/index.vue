@@ -55,6 +55,10 @@ async function disconnect() {
   publishing.status = false
 }
 
+onUnmounted(() => {
+  disconnect()
+})
+
 async function publish() {
   let jsonModule: DataLibContent
   try {
