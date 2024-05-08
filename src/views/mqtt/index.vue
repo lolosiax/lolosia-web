@@ -85,11 +85,11 @@ async function doPublish() {
   const list = jsonModule
   publish.index = 0
   function next() {
-    if (!publish.pause) {
+    if (!publish.pause || (publish.pause && publish.timeTicking < 0)) {
       publish.index += publish.timeTicking
-      if (publish.index >= list.length) publish.index = 0
-      else if (publish.index < 0) publish.index = list.length - 1
     }
+    if (publish.index >= list.length) publish.index = 0
+    else if (publish.index < 0) publish.index = list.length - 1
     return list[publish.index]
   }
 
@@ -115,13 +115,13 @@ async function doPublish() {
 
     let item = next()
     // 判断下有没有内容，防止空指针
-    if (item[0]?.content[0]) {
+    if (item[0]?.content?.[0]) {
       // 设置时间
       publish.lastRawTimestamp = item[0].content[0].timeStamp
       // 处理暂停等操作对时间的影响
       if (!publish.rawTime) {
-        if (publish.pause) publish.timeOffset += 100
-        else if (publish.timeTicking < 0) publish.timeOffset += 200
+        if (publish.timeTicking < 0) publish.timeOffset += 200
+        else if (publish.pause) publish.timeOffset += 100
         const offset = publish.timeOffset
         publish.lastTimestamp = publish.lastRawTimestamp + publish.timeOffset
         // 由于时间发生变化，对所有车辆的时间进行替换
@@ -153,6 +153,12 @@ function pause() {
 function reverse() {
   publish.timeTicking = -1
   publish.rawTime = false
+}
+
+function move(tick: number) {
+  publish.rawTime = false
+  publish.index += tick
+  publish.timeOffset -= tick * 100
 }
 </script>
 
@@ -202,7 +208,7 @@ function reverse() {
               {{ (publish.lastTime - publish.startTime) / 1000 }} 秒
             </el-descriptions-item>
             <el-descriptions-item label="数据运行时间">
-              {{ (publish.lastTimestamp - publish.startTimestamp) / 1000 }} 秒
+              {{ (publish.lastRawTimestamp - publish.startTimestamp) / 1000 }} 秒
             </el-descriptions-item>
             <el-descriptions-item label="原始时间">
               <template v-if="publish.rawTime">正常</template>
@@ -255,6 +261,14 @@ function reverse() {
             <el-button v-if="!publish.pause" type="warning" @click="pause">暂停</el-button>
             <el-button v-else type="success" @click="publish.pause = false">继续</el-button>
             <el-button type="danger" @mousedown="reverse" @mouseup="publish.timeTicking = 1">倒带</el-button>
+            <el-button-group type="info">
+              <el-button @click="move(-100)">后退10秒</el-button>
+              <el-button @click="move(-10)">后退1秒</el-button>
+              <el-button @click="move(-1)">后退1帧</el-button>
+              <el-button @click="move(1)">前进1帧</el-button>
+              <el-button @click="move(10)">前进1秒</el-button>
+              <el-button @click="move(100)">前进10秒</el-button>
+            </el-button-group>
           </template>
         </el-form-item>
       </el-form>

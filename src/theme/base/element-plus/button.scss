@@ -119,4 +119,16 @@ html.base-theme {
   .el-button + .el-button {
     margin-left: 12px;
   }
+
+  .el-button-group > .el-button + .el-button{
+    margin-left: unset;
+  }
+
+  .el-button +.el-button-group {
+    margin-left: 12px;
+  }
+
+  .el-button-group +.el-button-group {
+    margin-left: 12px;
+  }
 }
