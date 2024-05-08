@@ -19,7 +19,7 @@ const password = $toRef(mqttStore, 'password')
 const clientId = $toRef(mqttStore, 'clientId')
 
 let loading = $ref(false)
-const publishing = reactive({
+const publish = reactive({
   status: false,
   index: 0,
   count: 1,
@@ -27,8 +27,17 @@ const publishing = reactive({
   startTimestamp: 0,
   lastTime: 0,
   lastTimestamp: 0,
+  lastRawTimestamp: 0,
+  timeOffset: 0,
+  timeTicking: 1,
   onlineCars: 0,
-  percentage: 0
+  percentage: 0,
+  pause: false,
+  rawTime: true,
+  range: {
+    start: 0,
+    end: 0
+  }
 })
 const active = $ref('CLC_track')
 
@@ -39,11 +48,11 @@ function connect() {
     clientId
   })
   mqttClient.on('connect', (it) => {
-    publishing.status = true
+    publish.status = true
   })
 
   mqttClient.on('error', (it) => {
-    publishing.status = false
+    publish.status = false
     console.error(it)
   })
 }
@@ -52,14 +61,14 @@ async function disconnect() {
   jobCancel.value?.()
   await mqttClient?.endAsync()
   mqttClient = null
-  publishing.status = false
+  publish.status = false
 }
 
 onUnmounted(() => {
   disconnect()
 })
 
-async function publish() {
+async function doPublish() {
   let jsonModule: DataLibContent
   try {
     loading = true
@@ -73,42 +82,73 @@ async function publish() {
     return
   }
   const list = jsonModule
-  let i = 0
+  publish.index = 0
   function next() {
-    i++
-    if (i >= list.length) i = 0
-    return list[i]
+    if (!publish.pause) {
+      publish.index += publish.timeTicking
+      if (publish.index >= list.length) publish.index = 0
+      else if (publish.index < 0) publish.index = list.length - 1
+    }
+    return list[publish.index]
   }
 
   let exit = false
   jobCancel.value = () => {
     exit = true
     jobCancel.value = null
-    publishing.startTimestamp = 0
+    publish.startTimestamp = 0
   }
-  publishing.startTime = Date.now()
-  publishing.count = list.length
+  publish.startTime = Date.now()
+  publish.count = list.length
+  publish.pause = false
+  publish.rawTime = true
   // 发送数据的定时器
   const interval = setInterval(() => {
     if (exit) {
       clearInterval(interval)
       return
     }
-    const item = next()
-    publishing.lastTime = Date.now()
+    // if (publishing.pause) return
+    publish.lastTime = Date.now()
+
+    let item = next()
+    // 判断下有没有内容，防止空指针
     if (item[0]?.content[0]) {
-      publishing.lastTimestamp = item[0].content[0].timeStamp
-      if (publishing.startTimestamp === 0) {
-        publishing.startTimestamp = publishing.lastTimestamp
+      // 设置时间
+      publish.lastRawTimestamp = item[0].content[0].timeStamp
+      // 处理暂停等操作对时间的影响
+      if (!publish.rawTime) {
+        if (publish.pause) publish.timeOffset += 100
+        else if (publish.timeTicking < 0) publish.timeOffset += 200
+        const offset = publish.timeOffset
+        publish.lastTimestamp = publish.lastRawTimestamp + publish.timeOffset
+        // 由于时间发生变化，对所有车辆的时间进行替换
+        item = JSON.parse(JSON.stringify(item))
+        const list = item[0].content
+        for (const it of list) it.timeStamp = it.timeStamp + offset
+      } else {
+        publish.lastTimestamp = publish.lastRawTimestamp
+      }
+      if (publish.startTimestamp === 0) {
+        publish.startTimestamp = publish.lastTimestamp
       }
     }
-    publishing.onlineCars = item[0]?.content?.length ?? 0
-    publishing.index = i
-    publishing.percentage = Number(((publishing.index / (publishing.count | 1)) * 100).toFixed(2))
+    publish.onlineCars = item[0]?.content?.length ?? 0
+    publish.percentage = Number(((publish.index / (publish.count | 1)) * 100).toFixed(2))
 
     const json = JSON.stringify(item)
     mqttClient!.publish(topic, json, {})
   }, 100)
+}
+
+function pause() {
+  publish.pause = true
+  publish.rawTime = false
+}
+
+function reverse() {
+  publish.timeTicking = -1
+  publish.rawTime = false
 }
 </script>
 
@@ -152,31 +192,43 @@ async function publish() {
           <el-input v-model="password" />
         </el-form-item>
         <el-form-item v-if="jobCancel" label="状态">
-          <el-descriptions border direction="vertical">
-            <el-descriptions-item label="进度">{{ publishing.index }} / {{ publishing.count }}</el-descriptions-item>
+          <el-descriptions border direction="vertical" column="4">
+            <el-descriptions-item label="进度">{{ publish.index }} / {{ publish.count }}</el-descriptions-item>
             <el-descriptions-item label="运行时间">
-              {{ (publishing.lastTime - publishing.startTime) / 1000 }} 秒
+              {{ (publish.lastTime - publish.startTime) / 1000 }} 秒
             </el-descriptions-item>
             <el-descriptions-item label="数据运行时间">
-              {{ (publishing.lastTimestamp - publishing.startTimestamp) / 1000 }} 秒
+              {{ (publish.lastTimestamp - publish.startTimestamp) / 1000 }} 秒
+            </el-descriptions-item>
+            <el-descriptions-item label="原始时间">
+              <template v-if="publish.rawTime">正常</template>
+              <template v-else>已禁用</template>
             </el-descriptions-item>
             <el-descriptions-item label="数据起始时间戳">
-              {{ publishing.startTimestamp }}
+              {{ publish.startTimestamp }}
             </el-descriptions-item>
             <el-descriptions-item label="数据当前时间戳">
-              {{ publishing.lastTimestamp }}
+              {{ publish.lastTimestamp }}
+            </el-descriptions-item>
+            <el-descriptions-item label="数据原始时间戳">
+              {{ publish.lastRawTimestamp }}
             </el-descriptions-item>
             <el-descriptions-item label="活跃车辆">
-              {{ publishing.onlineCars }}
+              {{ publish.onlineCars }}
             </el-descriptions-item>
           </el-descriptions>
-          <el-progress flex-grow text-inside stroke-width="20" :percentage="publishing.percentage" />
+          <el-progress flex-grow text-inside :stroke-width="20" :percentage="publish.percentage" />
         </el-form-item>
         <el-form-item>
-          <el-button v-if="!publishing.status" type="primary" @click="connect">连接</el-button>
+          <el-button v-if="!publish.status" type="primary" @click="connect">连接</el-button>
           <el-button v-else type="danger" @click="disconnect">断开</el-button>
-          <el-button v-if="!jobCancel" type="primary" :disabled="!publishing.status" @click="publish">发送</el-button>
-          <el-button v-else type="danger" :disabled="!publishing.status" @click="() => jobCancel?.()">停止</el-button>
+          <el-button v-if="!jobCancel" type="primary" :disabled="!publish.status" @click="doPublish">发送</el-button>
+          <template v-else>
+            <el-button type="danger" :disabled="!publish.status" @click="() => jobCancel?.()">停止</el-button>
+            <el-button v-if="!publish.pause" type="warning" @click="pause">暂停</el-button>
+            <el-button v-else type="success" @click="publish.pause = false">继续</el-button>
+            <el-button type="danger" @mousedown="reverse" @mouseup="publish.timeTicking = 1">倒带</el-button>
+          </template>
         </el-form-item>
       </el-form>
     </el-main>
