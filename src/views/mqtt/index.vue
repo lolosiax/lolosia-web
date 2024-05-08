@@ -19,6 +19,11 @@ const password = $toRef(mqttStore, 'password')
 const clientId = $toRef(mqttStore, 'clientId')
 
 let loading = $ref(false)
+type CarPos = {
+  name: string
+  x: number
+  y: number
+}
 const publish = reactive({
   status: false,
   index: 0,
@@ -38,7 +43,8 @@ const publish = reactive({
   range: {
     start: 0,
     end: 0
-  }
+  },
+  cars: [] as CarPos[]
 })
 const active = $ref('CLC_track')
 
@@ -107,6 +113,7 @@ async function doPublish() {
   const interval = setInterval(() => {
     if (exit) {
       clearInterval(interval)
+      publish.cars = []
       return
     }
     // if (publishing.pause) return
@@ -116,6 +123,7 @@ async function doPublish() {
     let item = next()
     // 判断下有没有内容，防止空指针
     if (item[0]?.content?.[0]) {
+      let list = item[0].content
       // 设置时间
       publish.lastRawTimestamp = item[0].content[0].timeStamp
       // 处理暂停等操作对时间的影响
@@ -126,7 +134,7 @@ async function doPublish() {
         publish.lastTimestamp = publish.lastRawTimestamp + publish.timeOffset
         // 由于时间发生变化，对所有车辆的时间进行替换
         item = JSON.parse(JSON.stringify(item))
-        const list = item[0].content
+        list = item[0].content
         for (const it of list) it.timeStamp = it.timeStamp + offset
       } else {
         publish.lastTimestamp = publish.lastRawTimestamp
@@ -134,6 +142,11 @@ async function doPublish() {
       if (publish.startTimestamp === 0) {
         publish.startTimestamp = publish.lastTimestamp
       }
+      publish.cars = list.map((it) => ({
+        name: it.global_track_id,
+        x: it.x / 1.6,
+        y: it.y / 0.9
+      }))
     }
     publish.onlineCars = item[0]?.content?.length ?? 0
     publish.percentage = Number(((publish.index / (publish.count | 1)) * 100).toFixed(2))
@@ -202,7 +215,7 @@ function move(tick: number) {
           <el-input v-model="password" />
         </el-form-item>
         <el-form-item v-if="jobCancel" label="状态">
-          <el-descriptions border direction="vertical" column="4">
+          <el-descriptions border direction="vertical" :column="4">
             <el-descriptions-item label="进度">{{ publish.index }} / {{ publish.count }}</el-descriptions-item>
             <el-descriptions-item label="运行时间">
               {{ (publish.lastTime - publish.startTime) / 1000 }} 秒
@@ -272,6 +285,17 @@ function move(tick: number) {
           </template>
         </el-form-item>
       </el-form>
+      <div v-if="jobCancel" class="preview">
+        <div p2>车辆状态预览</div>
+        <div
+          class="preview-item"
+          v-for="car in publish.cars"
+          :key="car.name"
+          :style="{ left: car.x + '%', top: car.y + '%' }"
+        >
+          <span>{{ car.name }}</span>
+        </div>
+      </div>
     </el-main>
     <el-aside />
   </el-container>
@@ -324,6 +348,31 @@ function move(tick: number) {
         color: white;
         border-radius: 5px;
         font-weight: 800;
+      }
+    }
+  }
+  .preview {
+    border: 1px solid black;
+    overflow: hidden;
+    height: 40vh;
+    position: relative;
+    .preview-item {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 0;
+      height: 0;
+      transition-property: left, top;
+      transition-duration: 0.3s;
+      span {
+        display: block;
+        border-radius: 4px;
+        //noinspection CssInvalidPropertyValue
+        text-wrap: nowarp;
+        color: white;
+        background-color: black;
+        padding: 5px;
       }
     }
   }
