@@ -79,37 +79,36 @@ async function publish() {
     if (i >= list.length) i = 0
     return list[i]
   }
-  ;(async () => {
-    let exit = false
-    jobCancel.value = () => {
-      exit = true
-      jobCancel.value = null
-      publishing.startTimestamp = 0
-    }
-    publishing.startTime = Date.now()
-    publishing.count = list.length
-    // 发送数据的定时器
-    const interval = setInterval(() => {
-      if (exit) {
-        clearInterval(interval)
-        return
-      }
-      const item = next()
-      publishing.lastTime = Date.now()
-      if (item[0]?.content[0]) {
-        publishing.lastTimestamp = item[0].content[0].timeStamp
-        if (publishing.startTimestamp === 0) {
-          publishing.startTimestamp = publishing.lastTimestamp
-        }
-      }
-      publishing.onlineCars = item[0]?.content?.length ?? 0
-      publishing.index = i
-      publishing.percentage = Number(((publishing.index / (publishing.count | 1)) * 100).toFixed(2))
 
-      const json = JSON.stringify(item)
-      mqttClient!.publish(topic, json, {})
-    }, 100)
-  })().catch((e) => console.error(e))
+  let exit = false
+  jobCancel.value = () => {
+    exit = true
+    jobCancel.value = null
+    publishing.startTimestamp = 0
+  }
+  publishing.startTime = Date.now()
+  publishing.count = list.length
+  // 发送数据的定时器
+  const interval = setInterval(() => {
+    if (exit) {
+      clearInterval(interval)
+      return
+    }
+    const item = next()
+    publishing.lastTime = Date.now()
+    if (item[0]?.content[0]) {
+      publishing.lastTimestamp = item[0].content[0].timeStamp
+      if (publishing.startTimestamp === 0) {
+        publishing.startTimestamp = publishing.lastTimestamp
+      }
+    }
+    publishing.onlineCars = item[0]?.content?.length ?? 0
+    publishing.index = i
+    publishing.percentage = Number(((publishing.index / (publishing.count | 1)) * 100).toFixed(2))
+
+    const json = JSON.stringify(item)
+    mqttClient!.publish(topic, json, {})
+  }, 100)
 }
 </script>
 
