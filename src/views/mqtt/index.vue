@@ -30,6 +30,7 @@ const publish = reactive({
   lastRawTimestamp: 0,
   timeOffset: 0,
   timeTicking: 1,
+  performance: 0,
   onlineCars: 0,
   percentage: 0,
   pause: false,
@@ -110,6 +111,7 @@ async function doPublish() {
     }
     // if (publishing.pause) return
     publish.lastTime = Date.now()
+    const perStartTime = performance.now()
 
     let item = next()
     // 判断下有没有内容，防止空指针
@@ -138,6 +140,8 @@ async function doPublish() {
 
     const json = JSON.stringify(item)
     mqttClient!.publish(topic, json, {})
+
+    publish.performance = performance.now() - perStartTime
   }, 100)
 }
 
@@ -217,7 +221,30 @@ function reverse() {
               {{ publish.onlineCars }}
             </el-descriptions-item>
           </el-descriptions>
-          <el-progress flex-grow text-inside :stroke-width="20" :percentage="publish.percentage" />
+          <div flex-grow>
+            <div text-lg>发送进度：{{ publish.percentage }}%</div>
+            <el-progress w-full :stroke-width="20" :percentage="publish.percentage">
+              <template #default>&nbsp;</template>
+            </el-progress>
+            <template v-if="publish.performance < 1">
+              <div mt="2" text-lg>性能损耗：{{ publish.performance.toFixed(2) }} ms</div>
+              <el-progress w-full :stroke-width="20" :percentage="publish.performance * 100">
+                <template #default>&nbsp;</template>
+              </el-progress>
+            </template>
+            <template v-else-if="publish.performance < 10">
+              <div mt="2" text-lg>性能损耗：{{ publish.performance.toFixed(1) }} ms</div>
+              <el-progress w-full status="warning" :stroke-width="20" :percentage="publish.performance * 10">
+                <template #default>&nbsp;</template>
+              </el-progress>
+            </template>
+            <template v-else>
+              <div mt="2" text-lg>性能损耗：{{ publish.performance.toFixed(0) }} ms</div>
+              <el-progress w-full status="exception" :stroke-width="20" :percentage="publish.performance">
+                <template #default>&nbsp;</template>
+              </el-progress>
+            </template>
+          </div>
         </el-form-item>
         <el-form-item>
           <el-button v-if="!publish.status" type="primary" @click="connect">连接</el-button>
