@@ -88,7 +88,12 @@ async function publish() {
     }
     publishing.startTime = Date.now()
     publishing.count = list.length
-    while (!exit) {
+    // 发送数据的定时器
+    const interval = setInterval(() => {
+      if (exit) {
+        clearInterval(interval)
+        return
+      }
       const item = next()
       publishing.lastTime = Date.now()
       if (item[0]?.content[0]) {
@@ -103,9 +108,7 @@ async function publish() {
 
       const json = JSON.stringify(item)
       mqttClient!.publish(topic, json, {})
-
-      await delay(100)
-    }
+    }, 100)
   })().catch((e) => console.error(e))
 }
 </script>
