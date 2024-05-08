@@ -5,8 +5,9 @@ import { delay } from '@/utils/common-util'
 import type { Ref } from 'vue'
 import { useMqttStore } from '@/store/mqtt'
 import type { DataLib, DataLibContent } from '@/views/mqtt/dataLib'
-import dataLib from '@/views/mqtt/dataLib'
+import dataLib0 from '@/views/mqtt/dataLib'
 import { ElMessage } from 'element-plus'
+import { add } from 'xe-utils'
 
 let mqttClient: MqttClient | null = $ref(null)
 const jobCancel: Ref<(() => void) | null> = ref() as any
@@ -19,6 +20,7 @@ const password = $toRef(mqttStore, 'password')
 const clientId = $toRef(mqttStore, 'clientId')
 
 let loading = $ref(false)
+const dataLib = reactive(dataLib0)
 type CarPos = {
   name: string
   x: number
@@ -47,6 +49,25 @@ const publish = reactive({
   cars: [] as CarPos[]
 })
 const active = $ref('CLC_track')
+
+function addData() {
+  const input = document.createElement('input')
+  input.accept = 'application/json'
+  input.type = 'file'
+  input.onchange = () => {
+    if (input.files?.[0]) {
+      const file = input.files[0]
+      dataLib[file.name.replace('.json', '')] = {
+        title: '',
+        async data() {
+          const text = await file.text()
+          return JSON.parse(text)
+        }
+      } as DataLib
+    }
+  }
+  input.click()
+}
 
 function connect() {
   mqttClient = mqtt.connect(url, {
@@ -195,6 +216,9 @@ function move(tick: number) {
           <el-col :span="8">{{ key }}</el-col>
           <el-col :span="16">{{ it.title }}</el-col>
         </el-row>
+        <div flex justify-center m2>
+          <el-button w="150px" type="primary" @click="addData">添加</el-button>
+        </div>
       </div>
     </el-aside>
     <el-main>
