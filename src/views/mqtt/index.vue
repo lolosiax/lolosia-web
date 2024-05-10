@@ -42,6 +42,7 @@ const publish = reactive({
   percentage: 0,
   pause: false,
   rawTime: true,
+  forceRawTime: false,
   range: {
     start: 0,
     end: 0
@@ -178,22 +179,39 @@ async function doPublish() {
     publish.performance = performance.now() - perStartTime
   }, 100)
 }
+/** 尝试关闭原始时间模式，这在强制使用原始时间模式开关打开时不生效 */
+function triggerDisableRawTime() {
+  if (publish.forceRawTime) return
+  publish.rawTime = false
+}
 
 function pause() {
   publish.pause = true
-  publish.rawTime = false
+  triggerDisableRawTime()
 }
 
 function reverse() {
   publish.timeTicking = -1
-  publish.rawTime = false
+  triggerDisableRawTime()
 }
 
 function move(tick: number) {
-  publish.rawTime = false
+  triggerDisableRawTime()
   publish.index += tick
   publish.timeOffset -= tick * 100
 }
+
+watch(
+  () => publish.forceRawTime,
+  (it) => {
+    if (it) {
+      publish.rawTime = true
+      publish.timeOffset = 0
+    } else if (publish.pause) {
+      publish.rawTime = false
+    }
+  }
+)
 </script>
 
 <template>
@@ -222,7 +240,7 @@ function move(tick: number) {
       </div>
     </el-aside>
     <el-main>
-      <el-form label-width="auto">
+      <el-form label-width="auto" class="config-form">
         <el-form-item label="地址">
           <el-input v-model="url" />
         </el-form-item>
@@ -237,6 +255,41 @@ function move(tick: number) {
         </el-form-item>
         <el-form-item label="密码">
           <el-input v-model="password" />
+        </el-form-item>
+        <el-form-item label="控制柄">
+          <el-button v-if="!publish.status" type="primary" @click="connect">连接</el-button>
+          <el-button v-else type="danger" @click="disconnect">断开</el-button>
+          <el-button v-if="!jobCancel" type="primary" :disabled="!publish.status" @click="doPublish">发送</el-button>
+          <template v-else>
+            <el-button type="danger" :disabled="!publish.status" @click="() => jobCancel?.()">停止</el-button>
+          </template>
+          <div class="publish-controller-bar" :class="{ disabled: !jobCancel }">
+            <el-button v-if="!publish.pause" type="warning" @click="pause">暂停</el-button>
+            <el-button v-else type="success" @click="publish.pause = false">继续</el-button>
+          </div>
+          <el-button v-if="publish.forceRawTime" ml="12px" type="primary" @click="publish.forceRawTime = false">
+            原始时间模式:开
+          </el-button>
+          <el-button v-else ml="12px" type="info" @click="publish.forceRawTime = true">原始时间模式:关</el-button>
+          <div class="publish-controller-bar" :class="{ disabled: !jobCancel }">
+            <el-button type="info" @mousedown="reverse" @mouseup="publish.timeTicking = 1">倒带</el-button>
+            <el-button-group type="info">
+              <el-button @click="move(-100)">后退10秒</el-button>
+              <el-button @click="move(-10)">后退1秒</el-button>
+              <el-button @click="move(-1)">后退1帧</el-button>
+              <el-button @click="move(1)">前进1帧</el-button>
+              <el-button @click="move(10)">前进1秒</el-button>
+              <el-button @click="move(100)">前进10秒</el-button>
+            </el-button-group>
+          </div>
+        </el-form-item>
+        <el-form-item label="提示">
+          <div v-if="!publish.forceRawTime" style="font-size: 1.2em" text-red>
+            原始时间模式已关闭，这可能导致需要绝对时间的功能出现异常，例如红绿灯与车流可能不再同步
+          </div>
+          <div v-else style="font-size: 1.2em" text-red>
+            原始时间模式已开启，这可能导致修改进度时画面出现闪烁，暂停时画面不显示车辆的问题
+          </div>
         </el-form-item>
         <el-form-item v-if="jobCancel" label="状态">
           <el-descriptions border direction="vertical" :column="4">
@@ -264,49 +317,34 @@ function move(tick: number) {
               {{ publish.onlineCars }}
             </el-descriptions-item>
           </el-descriptions>
-          <div flex-grow>
+          <div flex-grow pl="5">
             <div text-lg>发送进度：{{ publish.percentage }}%</div>
-            <el-progress w-full :stroke-width="20" :percentage="publish.percentage">
-              <template #default>&nbsp;</template>
-            </el-progress>
+            <el-progress w-full :stroke-width="20" :percentage="publish.percentage" :show-text="false" />
             <template v-if="publish.performance < 1">
               <div mt="2" text-lg>性能损耗：{{ publish.performance.toFixed(2) }} ms</div>
-              <el-progress w-full :stroke-width="20" :percentage="publish.performance * 100">
-                <template #default>&nbsp;</template>
-              </el-progress>
+              <el-progress w-full :stroke-width="20" :percentage="publish.performance * 100" :show-text="false" />
             </template>
             <template v-else-if="publish.performance < 10">
               <div mt="2" text-lg>性能损耗：{{ publish.performance.toFixed(1) }} ms</div>
-              <el-progress w-full status="warning" :stroke-width="20" :percentage="publish.performance * 10">
-                <template #default>&nbsp;</template>
-              </el-progress>
+              <el-progress
+                w-full
+                status="warning"
+                :stroke-width="20"
+                :percentage="publish.performance * 10"
+                :show-text="false"
+              />
             </template>
             <template v-else>
               <div mt="2" text-lg>性能损耗：{{ publish.performance.toFixed(0) }} ms</div>
-              <el-progress w-full status="exception" :stroke-width="20" :percentage="publish.performance">
-                <template #default>&nbsp;</template>
-              </el-progress>
+              <el-progress
+                w-full
+                status="exception"
+                :stroke-width="20"
+                :percentage="publish.performance"
+                :show-text="false"
+              />
             </template>
           </div>
-        </el-form-item>
-        <el-form-item>
-          <el-button v-if="!publish.status" type="primary" @click="connect">连接</el-button>
-          <el-button v-else type="danger" @click="disconnect">断开</el-button>
-          <el-button v-if="!jobCancel" type="primary" :disabled="!publish.status" @click="doPublish">发送</el-button>
-          <template v-else>
-            <el-button type="danger" :disabled="!publish.status" @click="() => jobCancel?.()">停止</el-button>
-            <el-button v-if="!publish.pause" type="warning" @click="pause">暂停</el-button>
-            <el-button v-else type="success" @click="publish.pause = false">继续</el-button>
-            <el-button type="danger" @mousedown="reverse" @mouseup="publish.timeTicking = 1">倒带</el-button>
-            <el-button-group type="info">
-              <el-button @click="move(-100)">后退10秒</el-button>
-              <el-button @click="move(-10)">后退1秒</el-button>
-              <el-button @click="move(-1)">后退1帧</el-button>
-              <el-button @click="move(1)">前进1帧</el-button>
-              <el-button @click="move(10)">前进1秒</el-button>
-              <el-button @click="move(100)">前进10秒</el-button>
-            </el-button-group>
-          </template>
         </el-form-item>
       </el-form>
       <div v-if="jobCancel" class="preview">
@@ -375,6 +413,20 @@ function move(tick: number) {
       }
     }
   }
+
+  .config-form {
+    .publish-controller-bar {
+      margin-left: 12px;
+      &.disabled {
+        > * {
+          pointer-events: none;
+        }
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+
   .preview {
     border: 1px solid black;
     overflow: hidden;
