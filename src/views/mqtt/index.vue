@@ -32,6 +32,7 @@ const publish = reactive({
   count: 1,
   startTime: 0,
   startTimestamp: 0,
+  startSecMark: 0,
   lastTime: 0,
   lastTimestamp: 0,
   lastRawTimestamp: 0,
@@ -43,6 +44,7 @@ const publish = reactive({
   pause: false,
   rawTime: true,
   forceRawTime: false,
+  normalizedTime: false,
   range: {
     start: 0,
     end: 0
@@ -148,21 +150,38 @@ async function doPublish() {
       let list = item[0].content
       // 设置时间
       publish.lastRawTimestamp = item[0].content[0].timeStamp
+
+      if (publish.startTimestamp === 0) {
+        publish.startTimestamp = publish.lastRawTimestamp
+        publish.startSecMark = item[0].content[0].secMark
+      }
+
+      if (!publish.rawTime || publish.normalizedTime) {
+        // 由于时间发生变化，对所有车辆进行复制，避免污染原始数据
+        item = JSON.parse(JSON.stringify(item))
+        list = item[0].content
+      }
+
+      // 时间归一化，将所有车辆的时间对其索引 * 100 ms
+      if (publish.normalizedTime) {
+        for (const it of list) {
+          it.timeStamp = publish.startTimestamp + publish.index * 100
+          it.secMark = (publish.startSecMark + publish.index * 100) % 60000
+        }
+      }
+
       // 处理暂停等操作对时间的影响
       if (!publish.rawTime) {
         if (publish.timeTicking < 0) publish.timeOffset += 200
         else if (publish.pause) publish.timeOffset += 100
         const offset = publish.timeOffset
         publish.lastTimestamp = publish.lastRawTimestamp + publish.timeOffset
-        // 由于时间发生变化，对所有车辆的时间进行替换
-        item = JSON.parse(JSON.stringify(item))
-        list = item[0].content
-        for (const it of list) it.timeStamp = it.timeStamp + offset
+        for (const it of list) {
+          it.timeStamp = it.timeStamp + offset
+          it.secMark = (it.secMark + offset) % 60000
+        }
       } else {
         publish.lastTimestamp = publish.lastRawTimestamp
-      }
-      if (publish.startTimestamp === 0) {
-        publish.startTimestamp = publish.lastTimestamp
       }
       publish.cars = list.map((it) => ({
         name: it.global_track_id,
@@ -257,38 +276,49 @@ watch(
           <el-input v-model="password" />
         </el-form-item>
         <el-form-item label="控制柄">
-          <el-button v-if="!publish.status" type="primary" @click="connect">连接</el-button>
-          <el-button v-else type="danger" @click="disconnect">断开</el-button>
-          <el-button v-if="!jobCancel" type="primary" :disabled="!publish.status" @click="doPublish">发送</el-button>
-          <template v-else>
-            <el-button type="danger" :disabled="!publish.status" @click="() => jobCancel?.()">停止</el-button>
-          </template>
-          <div class="publish-controller-bar" :class="{ disabled: !jobCancel }">
-            <el-button v-if="!publish.pause" type="warning" @click="pause">暂停</el-button>
-            <el-button v-else type="success" @click="publish.pause = false">继续</el-button>
-          </div>
-          <el-button v-if="publish.forceRawTime" ml="12px" type="primary" @click="publish.forceRawTime = false">
-            原始时间模式:开
-          </el-button>
-          <el-button v-else ml="12px" type="info" @click="publish.forceRawTime = true">原始时间模式:关</el-button>
-          <div class="publish-controller-bar" :class="{ disabled: !jobCancel }">
-            <el-button type="info" @mousedown="reverse" @mouseup="publish.timeTicking = 1">倒带</el-button>
-            <el-button-group type="info">
-              <el-button @click="move(-100)">后退10秒</el-button>
-              <el-button @click="move(-10)">后退1秒</el-button>
-              <el-button @click="move(-1)">后退1帧</el-button>
-              <el-button @click="move(1)">前进1帧</el-button>
-              <el-button @click="move(10)">前进1秒</el-button>
-              <el-button @click="move(100)">前进10秒</el-button>
-            </el-button-group>
+          <div>
+            <el-row>
+              <el-button v-if="!publish.status" type="primary" @click="connect">连接</el-button>
+              <el-button v-else type="danger" @click="disconnect">断开</el-button>
+              <el-button v-if="!jobCancel" type="primary" :disabled="!publish.status" @click="doPublish">
+                发送
+              </el-button>
+              <template v-else>
+                <el-button type="danger" :disabled="!publish.status" @click="() => jobCancel?.()">停止</el-button>
+              </template>
+              <el-button v-if="!publish.pause" :disabled="!jobCancel" type="warning" @click="pause">暂停</el-button>
+              <el-button v-else :disabled="!jobCancel" type="success" @click="publish.pause = false">继续</el-button>
+              <el-button v-if="publish.forceRawTime" ml="12px" type="primary" @click="publish.forceRawTime = false">
+                原始时间模式:开
+              </el-button>
+              <el-button v-else ml="12px" type="info" @click="publish.forceRawTime = true">原始时间模式:关</el-button>
+              <el-button v-if="publish.normalizedTime" ml="12px" type="primary" @click="publish.normalizedTime = false">
+                时间归一化:开
+              </el-button>
+              <el-button v-else ml="12px" type="info" @click="publish.normalizedTime = true">时间归一化:关</el-button>
+            </el-row>
+            <el-row class="publish-controller-bar" :class="{ disabled: !jobCancel }">
+              <el-button type="info" @mousedown="reverse" @mouseup="publish.timeTicking = 1">倒带</el-button>
+              <el-button-group type="info">
+                <el-button @click="move(-100)">后退10秒</el-button>
+                <el-button @click="move(-10)">后退1秒</el-button>
+                <el-button @click="move(-1)">后退1帧</el-button>
+                <el-button @click="move(1)">前进1帧</el-button>
+                <el-button @click="move(10)">前进1秒</el-button>
+                <el-button @click="move(100)">前进10秒</el-button>
+              </el-button-group>
+            </el-row>
           </div>
         </el-form-item>
         <el-form-item label="提示">
-          <div v-if="!publish.forceRawTime" style="font-size: 1.2em" text-red>
-            原始时间模式已关闭，这可能导致需要绝对时间的功能出现异常，例如红绿灯与车流可能不再同步
-          </div>
-          <div v-else style="font-size: 1.2em" text-red>
-            原始时间模式已开启，这可能导致修改进度时画面出现闪烁，暂停时画面不显示车辆的问题
+          <div style="font-size: 1.2em">
+            <div v-if="!publish.forceRawTime" text-red>
+              原始时间模式已关闭，这可能导致需要绝对时间的功能出现异常，例如红绿灯与车流可能不再同步
+            </div>
+            <div v-else text-red>原始时间模式已开启，这可能导致修改进度时画面出现闪烁，暂停时画面不显示车辆的问题</div>
+            <div v-if="publish.normalizedTime">
+              时间归一化已开启，可以修复原始数据可能存在的时间戳不一致问题，减少V2X系统内时间跳跃问题发生的概率。
+            </div>
           </div>
         </el-form-item>
         <el-form-item v-if="jobCancel" label="状态">
@@ -301,8 +331,9 @@ watch(
               {{ (publish.lastRawTimestamp - publish.startTimestamp) / 1000 }} 秒
             </el-descriptions-item>
             <el-descriptions-item label="原始时间">
-              <template v-if="publish.rawTime">正常</template>
-              <template v-else>已禁用</template>
+              <template v-if="!publish.rawTime">已禁用</template>
+              <template v-else-if="publish.normalizedTime">归一化</template>
+              <template v-else>正常</template>
             </el-descriptions-item>
             <el-descriptions-item label="数据起始时间戳">
               {{ publish.startTimestamp }}
@@ -416,7 +447,7 @@ watch(
 
   .config-form {
     .publish-controller-bar {
-      margin-left: 12px;
+      margin-top: 16px;
       &.disabled {
         > * {
           pointer-events: none;
