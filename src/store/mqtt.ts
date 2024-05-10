@@ -7,7 +7,10 @@ export const useMqttStore = defineStore('mqtt', {
       url: 'mqtt://localhost:15675/mqtt',
       username: 'root',
       password: '123456',
-      clientId: 'R328328'
+      clientId: 'R328328',
+      forceRawTime: false,
+      normalizedTime: false,
+      coolDownTime: 0
     }
   },
   persist: {

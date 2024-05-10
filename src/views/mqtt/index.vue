@@ -18,6 +18,9 @@ const url = $toRef(mqttStore, 'url')
 const username = $toRef(mqttStore, 'username')
 const password = $toRef(mqttStore, 'password')
 const clientId = $toRef(mqttStore, 'clientId')
+let forceRawTime = $toRef(mqttStore, 'forceRawTime')
+let normalizedTime = $toRef(mqttStore, 'normalizedTime')
+let coolDownTime = $toRef(mqttStore, 'coolDownTime')
 
 let loading = $ref(false)
 const dataLib = reactive(dataLib0)
@@ -43,8 +46,7 @@ const publish = reactive({
   percentage: 0,
   pause: false,
   rawTime: true,
-  forceRawTime: false,
-  normalizedTime: false,
+  coolDownTime: 0,
   range: {
     start: 0,
     end: 0
@@ -135,11 +137,31 @@ async function doPublish() {
   publish.rawTime = true
   // 发送数据的定时器
   const interval = setInterval(() => {
+    // 判断定时器被关闭
     if (exit) {
       clearInterval(interval)
       publish.cars = []
       return
     }
+
+    // 判断启用冷却时间
+    if (coolDownTime > 0) {
+      // 判断处于冷却状态
+      if (publish.coolDownTime > 0) {
+        publish.coolDownTime -= 100
+        // 操作后小于0时重置发布时间
+        if (publish.coolDownTime <= 0) {
+          publish.index = 0
+        }
+        return
+      }
+      // 判断进入冷却状态
+      if (publish.index == list.length - 1) {
+        publish.coolDownTime = coolDownTime
+        return
+      }
+    }
+
     // if (publishing.pause) return
     publish.lastTime = Date.now()
     const perStartTime = performance.now()
@@ -156,14 +178,14 @@ async function doPublish() {
         publish.startSecMark = item[0].content[0].secMark
       }
 
-      if (!publish.rawTime || publish.normalizedTime) {
+      if (!publish.rawTime || normalizedTime) {
         // 由于时间发生变化，对所有车辆进行复制，避免污染原始数据
         item = JSON.parse(JSON.stringify(item))
         list = item[0].content
       }
 
       // 时间归一化，将所有车辆的时间对其索引 * 100 ms
-      if (publish.normalizedTime) {
+      if (normalizedTime) {
         for (const it of list) {
           it.timeStamp = publish.startTimestamp + publish.index * 100
           it.secMark = (publish.startSecMark + publish.index * 100) % 60000
@@ -200,7 +222,7 @@ async function doPublish() {
 }
 /** 尝试关闭原始时间模式，这在强制使用原始时间模式开关打开时不生效 */
 function triggerDisableRawTime() {
-  if (publish.forceRawTime) return
+  if (forceRawTime) return
   publish.rawTime = false
 }
 
@@ -221,7 +243,7 @@ function move(tick: number) {
 }
 
 watch(
-  () => publish.forceRawTime,
+  () => mqttStore.forceRawTime,
   (it) => {
     if (it) {
       publish.rawTime = true
@@ -276,7 +298,7 @@ watch(
           <el-input v-model="password" />
         </el-form-item>
         <el-form-item label="控制柄">
-          <div>
+          <div flex-grow>
             <el-row>
               <el-button v-if="!publish.status" type="primary" @click="connect">连接</el-button>
               <el-button v-else type="danger" @click="disconnect">断开</el-button>
@@ -288,14 +310,21 @@ watch(
               </template>
               <el-button v-if="!publish.pause" :disabled="!jobCancel" type="warning" @click="pause">暂停</el-button>
               <el-button v-else :disabled="!jobCancel" type="success" @click="publish.pause = false">继续</el-button>
-              <el-button v-if="publish.forceRawTime" ml="12px" type="primary" @click="publish.forceRawTime = false">
+              <el-button v-if="forceRawTime" ml="12px" type="primary" @click="forceRawTime = false">
                 原始时间模式:开
               </el-button>
-              <el-button v-else ml="12px" type="info" @click="publish.forceRawTime = true">原始时间模式:关</el-button>
-              <el-button v-if="publish.normalizedTime" ml="12px" type="primary" @click="publish.normalizedTime = false">
+              <el-button v-else ml="12px" type="info" @click="forceRawTime = true">原始时间模式:关</el-button>
+              <el-button v-if="normalizedTime" ml="12px" type="primary" @click="normalizedTime = false">
                 时间归一化:开
               </el-button>
-              <el-button v-else ml="12px" type="info" @click="publish.normalizedTime = true">时间归一化:关</el-button>
+              <el-button v-else ml="12px" type="info" @click="normalizedTime = true">时间归一化:关</el-button>
+              <div flex-grow relative ml="5">
+                <div absolute style="top: -15px">
+                  <template v-if="coolDownTime === 0">冷却时间：关闭</template>
+                  <template v-else>冷却时间：{{ coolDownTime }} ms</template>
+                </div>
+                <el-slider v-model="coolDownTime" :min="0" :max="10000" :step="100" />
+              </div>
             </el-row>
             <el-row class="publish-controller-bar" :class="{ disabled: !jobCancel }">
               <el-button type="info" @mousedown="reverse" @mouseup="publish.timeTicking = 1">倒带</el-button>
@@ -312,11 +341,11 @@ watch(
         </el-form-item>
         <el-form-item label="提示">
           <div style="font-size: 1.2em">
-            <div v-if="!publish.forceRawTime" text-red>
+            <div v-if="!forceRawTime" text-red>
               原始时间模式已关闭，这可能导致需要绝对时间的功能出现异常，例如红绿灯与车流可能不再同步
             </div>
             <div v-else text-red>原始时间模式已开启，这可能导致修改进度时画面出现闪烁，暂停时画面不显示车辆的问题</div>
-            <div v-if="publish.normalizedTime">
+            <div v-if="normalizedTime">
               时间归一化已开启，可以修复原始数据可能存在的时间戳不一致问题，减少V2X系统内时间跳跃问题发生的概率。
             </div>
           </div>
@@ -332,7 +361,7 @@ watch(
             </el-descriptions-item>
             <el-descriptions-item label="原始时间">
               <template v-if="!publish.rawTime">已禁用</template>
-              <template v-else-if="publish.normalizedTime">归一化</template>
+              <template v-else-if="normalizedTime">归一化</template>
               <template v-else>正常</template>
             </el-descriptions-item>
             <el-descriptions-item label="数据起始时间戳">
