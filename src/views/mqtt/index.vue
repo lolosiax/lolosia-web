@@ -18,9 +18,10 @@ const url = $toRef(mqttStore, 'url')
 const username = $toRef(mqttStore, 'username')
 const password = $toRef(mqttStore, 'password')
 const clientId = $toRef(mqttStore, 'clientId')
-let forceRawTime = $toRef(mqttStore, 'forceRawTime')
-let normalizedTime = $toRef(mqttStore, 'normalizedTime')
-let coolDownTime = $toRef(mqttStore, 'coolDownTime')
+const forceRawTime = $toRef(mqttStore, 'forceRawTime')
+const normalizedTime = $toRef(mqttStore, 'normalizedTime')
+const coolDownTime = $toRef(mqttStore, 'coolDownTime')
+const loopPlayback = $toRef(mqttStore, 'loopPlayback')
 
 let loading = $ref(false)
 const dataLib = reactive(dataLib0)
@@ -137,6 +138,13 @@ async function doPublish() {
   publish.rawTime = true
   // 发送数据的定时器
   const interval = setInterval(() => {
+    // 判断取消循环播放
+    if (!loopPlayback) {
+      if (publish.index == list.length - 1) {
+        jobCancel.value?.()
+        return
+      }
+    }
     // 判断定时器被关闭
     if (exit) {
       clearInterval(interval)
@@ -310,15 +318,17 @@ watch(
               </template>
               <el-button v-if="!publish.pause" :disabled="!jobCancel" type="warning" @click="pause">暂停</el-button>
               <el-button v-else :disabled="!jobCancel" type="success" @click="publish.pause = false">继续</el-button>
-              <el-button v-if="forceRawTime" ml="12px" type="primary" @click="forceRawTime = false">
-                原始时间模式:开
-              </el-button>
-              <el-button v-else ml="12px" type="info" @click="forceRawTime = true">原始时间模式:关</el-button>
-              <el-button v-if="normalizedTime" ml="12px" type="primary" @click="normalizedTime = false">
-                时间归一化:开
-              </el-button>
-              <el-button v-else ml="12px" type="info" @click="normalizedTime = true">时间归一化:关</el-button>
-              <div flex-grow relative ml="5">
+              <el-button-group>
+                <el-button v-if="forceRawTime" type="primary" @click="forceRawTime = false">原始时间模式:开</el-button>
+                <el-button v-else type="info" @click="forceRawTime = true">原始时间模式:关</el-button>
+                <el-button v-if="normalizedTime" type="primary" @click="normalizedTime = false">
+                  时间归一化:开
+                </el-button>
+                <el-button v-else type="info" @click="normalizedTime = true">时间归一化:关</el-button>
+                <el-button v-if="loopPlayback" type="primary" @click="loopPlayback = false">自动重播:开</el-button>
+                <el-button v-else ml="12px" type="info" @click="loopPlayback = true">自动重播:关</el-button>
+              </el-button-group>
+              <div v-if="loopPlayback" flex-grow relative ml="5" style="top: 8px">
                 <div absolute style="top: -15px">
                   <template v-if="coolDownTime === 0">冷却时间：关闭</template>
                   <template v-else>冷却时间：{{ coolDownTime }} ms</template>
@@ -378,8 +388,20 @@ watch(
             </el-descriptions-item>
           </el-descriptions>
           <div flex-grow pl="5">
-            <div text-lg>发送进度：{{ publish.percentage }}%</div>
-            <el-progress w-full :stroke-width="20" :percentage="publish.percentage" :show-text="false" />
+            <template v-if="publish.coolDownTime <= 0">
+              <div text-lg>发送进度：{{ publish.percentage }}%</div>
+              <el-progress w-full :stroke-width="20" :percentage="publish.percentage" :show-text="false" />
+            </template>
+            <template v-else>
+              <div text-lg>冷却中……{{ publish.coolDownTime / 1000 }}s</div>
+              <el-progress
+                w-full
+                :stroke-width="20"
+                :percentage="(publish.coolDownTime / coolDownTime) * 100"
+                :show-text="false"
+                status="exception"
+              />
+            </template>
             <template v-if="publish.performance < 1">
               <div mt="2" text-lg>性能损耗：{{ publish.performance.toFixed(2) }} ms</div>
               <el-progress w-full :stroke-width="20" :percentage="publish.performance * 100" :show-text="false" />
@@ -410,9 +432,9 @@ watch(
       <div v-if="jobCancel" class="preview">
         <div p2>车辆状态预览</div>
         <div
-          class="preview-item"
           v-for="car in publish.cars"
           :key="car.name"
+          class="preview-item"
           :style="{ left: car.x + '%', top: car.y + '%' }"
         >
           <span>{{ car.name }}</span>

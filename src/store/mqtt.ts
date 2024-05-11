@@ -10,7 +10,8 @@ export const useMqttStore = defineStore('mqtt', {
       clientId: 'R328328',
       forceRawTime: false,
       normalizedTime: false,
-      coolDownTime: 0
+      coolDownTime: 0,
+      loopPlayback: true
     }
   },
   persist: {
