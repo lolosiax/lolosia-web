@@ -5,7 +5,11 @@ export const useDebuggerStore = defineStore('debugger', {
     return {
       enable: import.meta.env.VITE_APP_ENV !== 'prod',
       ui: {
-        showLayoutGrid: false
+        showLayoutGrid: false,
+        displayAllError: false,
+      },
+      basic: {
+        saveSession: false
       }
     }
   },

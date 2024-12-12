@@ -49,6 +49,9 @@ app.use(ElementPlus)
 //import vxe-table
 import VXETable from 'vxe-table'
 import 'vxe-table/lib/style.css'
+import { useKeyboard } from '@/hooks/use-keyboard'
 app.use(VXETable)
+
+useKeyboard()
 
 app.mount('#app')

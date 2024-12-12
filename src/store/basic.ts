@@ -5,12 +5,15 @@ import type { RouterTypes } from '~/basic'
 import defaultSettings from '@/settings'
 import router, { constantRoutes } from '@/router'
 import type { IUser } from '@/api/user'
+import { baseUrl } from '@/utils/request'
+import userImage from '@/assets/layout/user.png'
 
 export const useBasicStore = defineStore('basic', {
   state: () => {
     return {
       token: '',
       getUserInfo: false,
+      keepSession: true, // 如果需要丢失登录，将它设置为false。
       online: true,
       userInfo: {
         userName: '',
@@ -34,6 +37,7 @@ export const useBasicStore = defineStore('basic', {
       //axios req collection
       axiosPromiseArr: [] as Array<ObjKeys>,
       settings: defaultSettings,
+      noMainPadding: false,
       navbar: {
         cursor: 0,
         left: new Map<string, () => VNode[]>(),
@@ -45,6 +49,19 @@ export const useBasicStore = defineStore('basic', {
   persist: {
     storage: localStorage,
     paths: ['token']
+  },
+  getters: {
+    avatar(): string {
+      if (this.userInfo?.avatar) {
+        return `${baseUrl}user/avatar/get/${this.userInfo.id}`
+      } else return userImage
+    },
+    isAdmin(): boolean {
+      return this.roles.some((role) => role.includes('admin'))
+    },
+    isUser(): boolean {
+      return this.roles.some((role) => role.includes('user'))
+    }
   },
   actions: {
     setToken(data) {

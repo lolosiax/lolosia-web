@@ -30,6 +30,8 @@ onMounted(() => {
   setLanguage(language, route.meta?.title)
   setSize(size)
   toggleHtmlClass(theme)
+  // TODO Enable sse connect.
+  // initSSEConnect()
 })
 </script>
 <style lang="scss">

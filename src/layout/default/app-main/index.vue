@@ -1,5 +1,5 @@
 <template>
-  <div class="app-main" :class="{ 'show-tag-view': settings.showTagsView }">
+  <div class="app-main" :class="{ 'show-tag-view': settings.showTagsView, 'no-padding': noMainPadding }">
     <router-view v-slot="{ Component }">
       <!--has transition  setting by settings.mainNeedAnimation-->
       <transition v-if="settings.mainNeedAnimation" name="fade-transform" mode="out-in">
@@ -20,10 +20,10 @@ import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useRoute } from 'vue-router'
 import type { RouteLocationMatched } from 'vue-router'
-import type { RawConfig, RouteRawConfig } from "~/basic";
+import type { RawConfig, RouteRawConfig } from '~/basic'
 import { useBasicStore } from '@/store/basic'
 import { cloneDeep } from '@/hooks/use-common'
-const { settings, cachedViews } = storeToRefs(useBasicStore())
+const { settings, cachedViews, noMainPadding } = storeToRefs(useBasicStore())
 const route = useRoute()
 const key = computed(() => route.path)
 /*listen the component name changing, then to keep-alive the page*/
@@ -37,6 +37,17 @@ const removeDeepChildren = (deepOldRouter) => {
     basicStore.setCacheViewDeep(fItem.name)
   })
 }
+
+onUnmounted(() => {
+  noMainPadding.value = false
+})
+
+onBeforeRouteLeave((to, from) => {
+  if (to?.path != from?.path) {
+    noMainPadding.value = false
+  }
+})
+
 watch(
   () => route.name,
   () => {
@@ -110,7 +121,12 @@ watch(
   position: relative;
   overflow: hidden;
   background-color: var(--app-main-background);
+
+  &.no-padding {
+    padding: 0;
+  }
 }
+
 .show-tag-view {
   height: calc(100vh - #{var(--nav-bar-height)} - #{var(--tag-view-height)}) !important;
 }
