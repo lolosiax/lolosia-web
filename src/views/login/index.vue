@@ -132,14 +132,14 @@
         <span @click="mode = 0">登录</span>
       </p>
     </el-form>
-    <div v-show="false" class="icp">
+    <div class="icp">
       鲁ICP备 000000000号-0
       <template v-if="buildEnv">
         <br />
         {{ buildEnv }}
       </template>
     </div>
-    <div v-show="false" class="copyright">© 2026 Lolosia</div>
+    <div class="copyright">© 2026 Lolosia</div>
   </div>
 </template>
 
