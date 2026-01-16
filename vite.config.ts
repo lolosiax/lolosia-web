@@ -41,6 +41,14 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       host: true,
       strictPort: true
     },
+    experimental: {
+      renderBuiltUrl(filename, { hostType, type }) {
+        if (type == 'public' || hostType != 'js') {
+          return { relative: true }
+        }
+        return { runtime: `(window.NGINX_BASE_URL || '') + \`${setting.viteBasePath}${filename}\`` }
+      }
+    },
     plugins: [
       vue(),
       vueJsx(),
@@ -96,14 +104,14 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       }),
 
       vitePluginSetupExtend({ inject: { title: setting.title } }),
-      vitePluginVueSetupExtend(),
+      vitePluginVueSetupExtend()
       //依赖分析插件
       // visualizer({
       //   open: true,
       //   gzipSize: true,
       //   brotliSize: true
       // })
-
+      /*
       {
         name: 'index-transform',
         transform(code, id) {
@@ -123,6 +131,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           return [...head, preload].join('\n')
         }
       }
+       */
     ],
     build: {
       chunkSizeWarningLimit: 10000, //消除触发警告的 chunk, 默认500k

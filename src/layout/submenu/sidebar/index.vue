@@ -59,7 +59,7 @@ function basePath(path: string) {
   else return `${prop.parentRouter.path}/${path}`
 }
 </script>
-<style lang="scss">
+<style scoped lang="scss">
 //fix open the item style issue
 .el-menu-vertical {
   width: var(--side-bar-width);
