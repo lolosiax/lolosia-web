@@ -1,5 +1,5 @@
 <template>
-  <el-config-provider :locale="lang[language]" namespace="el" :size="size">
+  <el-config-provider :locale="lang['zh']" namespace="el" :size="size">
     <router-view />
   </el-config-provider>
 </template>
@@ -7,7 +7,6 @@
 import { onBeforeMount, onMounted } from 'vue'
 //element-plus lang
 import zh from 'element-plus/es/locale/lang/zh-cn'
-import en from 'element-plus/es/locale/lang/en'
 import { storeToRefs } from 'pinia/dist/pinia'
 import { useRoute } from 'vue-router'
 import { useBasicStore } from '@/store/basic'
@@ -15,7 +14,8 @@ import { useConfigStore } from '@/store/config'
 
 //reshow default setting
 import { toggleHtmlClass } from '@/theme/utils'
-const lang = { zh, en }
+import { initSSEConnect } from '@/utils/bus'
+const lang = { zh }
 
 const { settings } = storeToRefs(useBasicStore())
 const { size, language } = storeToRefs(useConfigStore())
@@ -30,8 +30,7 @@ onMounted(() => {
   setLanguage(language, route.meta?.title)
   setSize(size)
   toggleHtmlClass(theme)
-  // TODO Enable sse connect.
-  // initSSEConnect()
+  initSSEConnect()
 })
 </script>
 <style lang="scss">

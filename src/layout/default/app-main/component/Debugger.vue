@@ -5,10 +5,32 @@
     </el-button>
     <el-dialog v-if="data.dialog" v-model="data.dialog" :append-to-body="true" title="调试工具" :width="600">
       <div class="debugger-items">
+        <p>调试</p>
+        <div class="switch-item">
+          <p>显示调试工具图标</p>
+          <el-switch v-model="store.enable" />
+        </div>
+      </div>
+      <div class="debugger-items">
         <p>UI</p>
         <div class="switch-item">
           <p>显示页面布局网格</p>
           <el-switch v-model="ui.showLayoutGrid" />
+        </div>
+        <div class="switch-item">
+          <p>展示网络异常</p>
+          <el-switch v-model="ui.displayError" />
+        </div>
+        <div class="switch-item">
+          <p>展示全部网络异常</p>
+          <el-switch v-model="ui.displayAllError" />
+        </div>
+      </div>
+      <div class="debugger-items">
+        <p>系统状态</p>
+        <div class="switch-item">
+          <p>重启后保留用户凭据</p>
+          <el-switch v-model="basic.saveSession" />
         </div>
       </div>
     </el-dialog>
@@ -17,30 +39,57 @@
 </template>
 
 <script setup lang="ts">
-import MenuIcon from "@/components/MenuIcon.vue";
-import { useDebuggerStore } from "@/store/debuger";
-import bus from "@/utils/bus";
+import MenuIcon from '@/components/MenuIcon.vue'
+import { useDebuggerStore } from '@/store/debuger'
+import bus from '@/utils/bus'
+import { keyRef } from '@/hooks/use-keyboard'
 
-const store = useDebuggerStore();
-const { ui } = storeToRefs(store);
+const store = useDebuggerStore()
+const { ui, basic } = storeToRefs(store)
+const ctrl = keyRef('Control')
+const alt = keyRef('Alt')
+const hot = keyRef('Numpad0')
 
 const data = reactive({
   dialog: false,
-  gridHtml: `<style>*{ box-shadow: 0 0 1px 0 blue }</style>`
-});
+  gridHtml: `<style>
+*{
+  box-shadow: 0 0 1px 0 greenyellow;
+  animation: __dev_tools__colorFlash 2s infinite;
+}
+@keyframes __dev_tools__colorFlash {
+  0%, 50% {
+    box-shadow: 0 0 1px 0 yellow;
+  }
+  51%, 100% {
+    box-shadow: 0 0 1px 0 blue;
+  }
+}
+</style>`
+})
 
 function onDebuggerShow() {
-  data.dialog = true;
+  data.dialog = true
 }
 
 onMounted(() => {
-  bus.on("debugger:show", onDebuggerShow);
-});
+  bus.on('debugger:show', onDebuggerShow)
+})
 
 onUnmounted(() => {
-  bus.off("debugger:show", onDebuggerShow);
-});
+  bus.off('debugger:show', onDebuggerShow)
+})
 
+// 快速填写答案
+watch(
+  [alt, ctrl, hot],
+  ([a, b, c]) => {
+    if (a && b && c) {
+      onDebuggerShow()
+    }
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped lang="scss">

@@ -1,3 +1,4 @@
+import { baseUrl } from '@/utils/request'
 import type { VNode } from 'vue'
 import { nextTick } from 'vue'
 import { defineStore } from 'pinia'
@@ -5,7 +6,6 @@ import type { RouterTypes } from '~/basic'
 import defaultSettings from '@/settings'
 import router, { constantRoutes } from '@/router'
 import type { IUser } from '@/api/user'
-import { baseUrl } from '@/utils/request'
 import userImage from '@/assets/layout/user.png'
 
 export const useBasicStore = defineStore('basic', {
@@ -38,6 +38,7 @@ export const useBasicStore = defineStore('basic', {
       axiosPromiseArr: [] as Array<ObjKeys>,
       settings: defaultSettings,
       noMainPadding: false,
+      noSideBarBorderRadius: false,
       navbar: {
         cursor: 0,
         left: new Map<string, () => VNode[]>(),
@@ -46,10 +47,16 @@ export const useBasicStore = defineStore('basic', {
       }
     }
   },
-  persist: {
-    storage: localStorage,
-    paths: ['token']
-  },
+  persist: [
+    {
+      storage: localStorage,
+      paths: ['token']
+    },
+    {
+      storage: sessionStorage,
+      paths: ['keepSession']
+    }
+  ],
   getters: {
     avatar(): string {
       if (this.userInfo?.avatar) {
@@ -58,6 +65,9 @@ export const useBasicStore = defineStore('basic', {
     },
     isAdmin(): boolean {
       return this.roles.some((role) => role.includes('admin'))
+    },
+    isSuperAdmin(): boolean {
+      return this.roles.some((role) => role == 'super_admin')
     },
     isUser(): boolean {
       return this.roles.some((role) => role.includes('user'))
@@ -70,7 +80,7 @@ export const useBasicStore = defineStore('basic', {
     setFilterAsyncRoutes(routes) {
       this.$patch((state) => {
         state.filterAsyncRoutes = routes
-        state.allRoutes = constantRoutes.concat(routes)
+        state.allRoutes = constantRoutes().concat(routes)
       })
     },
     setUserInfo({ userInfo, roles, codes }) {
@@ -154,17 +164,11 @@ export interface IUserInfo {
   realName: string
   avatar: string
   phone: string
+  email: string
   id: string
   isUse: boolean
   team: string
   iGameKey: string
 }
 
-export interface IDatabaseType {
-  createdAt: string
-  updatedAt: string
-  createdBy?: string
-  updatedBy?: string
-}
-
-export interface IUnionUserInfo extends IUserInfo, IUser, IDatabaseType {}
+export interface IUnionUserInfo extends IUserInfo, IUser {}

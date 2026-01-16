@@ -75,7 +75,7 @@ export default defineComponent({
       });
       ElMessage.success("操作成功");
       userInfo.value = copy.value;
-      delete copy.password;
+      delete copy.value.password;
       cancel();
     }
 

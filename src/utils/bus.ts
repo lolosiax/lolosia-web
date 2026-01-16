@@ -77,3 +77,19 @@ export async function initSSEConnect() {
     await delay(5000)
   }
 }
+
+export function onEventBus(event: string, handler: (event: any) => void) {
+  const instance = getCurrentInstance()
+  if (!instance) {
+    console.error('No vue component instance found!')
+    return
+  }
+
+  onMounted(() => {
+    export1.on(event, handler)
+  })
+
+  onUnmounted(() => {
+    export1.off(event, handler)
+  })
+}

@@ -20,13 +20,11 @@
 
 .__init__image {
     height: 20vmin;
-    width: 20vmin;
+    /*width: 20vmin;*/
     /*background-image: url("/public/loading-logo.svg");*/
     background-size: 100% 100%;
     margin-bottom: 4vmin;
     overflow: hidden;
-    transform: translateY(-1000px);
-    filter: drop-shadow(0px 1000px orange);
 }
 
 .__init__image img {

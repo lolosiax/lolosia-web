@@ -1,6 +1,6 @@
 <template>
   <!-- 始终显示 elSvgIcon-->
-  <el-icon class="el-svg-icon">
+  <el-icon class="el-svg-icon menu-icon">
     <i :class="`bi bi-${icon}`"/>
   </el-icon>
 </template>

@@ -7,7 +7,8 @@ declare global {
     readonly VITE_BUILD_TIMESTAMP: string
     readonly VITE_BUILD_DISPLAY_NAME: string
     readonly VITE_GIT_COMMIT: string
-    readonly PROJECT_VERSION: string
+    readonly PROJECT_VERSION: string // 前端版本
+    readonly VITE_PROJECT_VERSION: string // 后端版本
     // 更多环境变量...
   }
   interface ImportMeta {

@@ -107,6 +107,10 @@ const toggleSideBar = () => {
       margin-left: 1.5em;
       margin-right: 0;
     }
+
+    .avatar-frame {
+      margin-right: 16px;
+    }
   }
 
   //center-title

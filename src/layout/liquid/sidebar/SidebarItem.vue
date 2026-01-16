@@ -4,7 +4,11 @@
       <Link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{ 'submenu-title-noDropdown': !isNest }">
           <MenuIcon v-if="showIcon" :icon="onlyOneChild.meta?.icon || item.meta?.icon" />
-          <template #title>{{ langTitle(onlyOneChild.meta?.title) }}</template>
+          <template #title>
+            <span class="item-title">
+              {{ langTitle(onlyOneChild.meta?.title) }}
+            </span>
+          </template>
         </el-menu-item>
       </Link>
     </template>
@@ -26,7 +30,7 @@
 
 <script setup lang="ts">
 import { resolve } from 'path-browserify'
-import Link from './Link.vue'
+import Link from '@/layout/default/sidebar/Link.vue'
 import MenuIcon from '@/components/MenuIcon.vue'
 import type { RouteRawConfig, RouterTypes } from '~/basic'
 import { isExternal } from '@/hooks/use-layout'
@@ -82,7 +86,47 @@ const resolvePath = (routePath) => {
 </script>
 
 <style scoped lang="scss">
-:deep(.el-menu-item.is-active) {
-  text-shadow: 1px 1px 0 #ffffff88;
+.el-menu-item {
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5em 1em !important;
+  margin: 0.5em;
+  height: unset;
+  border-radius: 10px;
+  transition: all 0.3s ease; /* 平滑过渡 */
+
+  &:hover {
+    background-color: var(--el-color-primary-light-5);
+  }
+
+  &.is-active {
+    color: white;
+    background-color: var(--lolosia-color-primary);
+    backdrop-filter: blur(10px); /* 磨砂效果（核心） */
+    -webkit-backdrop-filter: blur(10px); /* 兼容Safari */
+    box-shadow: 0 4px 8px 0 rgba(31, 38, 135, 0.3); /* 扩散白色阴影 */
+    border: 1px solid rgba(255, 255, 255, 0.18); /* 边框模拟玻璃反光 */
+  }
+
+  .menu-icon {
+    display: block;
+    position: unset;
+    height: unset;
+    width: unset;
+    padding: 0.2em;
+    margin: 0.2em 0;
+    text-align: center;
+    font-size: 1.8em;
+    aspect-ratio: 1 / 1;
+    background-color: white;
+    border: 1px solid lightgray;
+    border-radius: 7px;
+    color: #4b4b4b;
+  }
+
+  .item-title {
+    display: block;
+    font-size: 0.8em;
+  }
 }
 </style>

@@ -53,13 +53,15 @@ service.interceptors.response.use(
     } else {
       const { msg } = response?.data ?? { msg: '未知异常' }
       const {
-        ui: { displayAllError }
+        ui: { displayAllError, displayError }
       } = useDebuggerStore()
-      if (msg != '未知异常' || (msg == '未知异常' && displayAllError)) {
-        ElMessage.error({
-          message: msg || err,
-          duration: 2 * 1000
-        })
+      if (displayError) {
+        if (msg != '未知异常' || (msg == '未知异常' && displayAllError)) {
+          ElMessage.error({
+            message: msg || err,
+            duration: 2 * 1000
+          })
+        }
       }
     }
     return Promise.reject(err)
@@ -84,7 +86,7 @@ export function getRoot() {
   return `${location.protocol}//${location.host}`
 }
 
-export const baseUrl: string = `${getRoot()}/home/api/`
+export const baseUrl: string = `${getRoot()}/api/`
 
 //导出service实例给页面调用 , config->页面的配置
 export default function request<T>(config: AxiosRequestConfig): Promise<T> {

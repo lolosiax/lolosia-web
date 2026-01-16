@@ -1,12 +1,12 @@
 <template>
-  <div v-if="settings.ShowDropDown" class="right-menu rowSC">
+  <div v-if="settings.ShowDropDown" class="avatar-frame right-menu rowSC">
     <!--        <ScreenFull />-->
     <!--        <ScreenLock />-->
     <!--        <ThemeSelect />-->
     <!--        <SizeSelect />-->
     <!--        <LangSelect />-->
-    <el-dropdown trigger="click" size="default">
-      <Avatar />
+    <el-dropdown trigger="click" size="default" :placement="placement">
+      <Avatar :rounded="rounded" />
       <template #dropdown>
         <el-dropdown-menu class="drop-down">
           <el-dropdown-item class="welcome-user">
@@ -39,9 +39,15 @@ import { resetState } from '@/hooks/use-permission'
 import { elMessage } from '@/hooks/use-element'
 import { useBasicStore } from '@/store/basic'
 import { langTitle } from '@/hooks/use-common'
+import type { Placement } from 'element-plus'
 
 const basicStore = useBasicStore()
 const { settings, sidebar, userInfo } = basicStore
+
+const props = defineProps<{
+  rounded?: boolean
+  placement?: Placement
+}>()
 
 //退出登录
 const router = useRouter()
@@ -69,7 +75,7 @@ const time = computed(() => {
 //drop-down
 .right-menu {
   cursor: pointer;
-  margin-right: 16px !important;
+  margin-right: 16px;
   position: relative;
   background-color: var(--nav-bar-right-menu-background);
   .switch-platform-btn {

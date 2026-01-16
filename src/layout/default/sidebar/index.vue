@@ -31,7 +31,7 @@ watch(() => route.path, val => {
   activeMenu.value = val
 })
 </script>
-<style lang="scss">
+<style scoped lang="scss">
 //fix open the item style issue
 .el-menu-vertical {
   width: var(--side-bar-width);

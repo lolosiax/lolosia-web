@@ -28,6 +28,7 @@ declare global {
   const elMessage: typeof import('../src/hooks/use-element')['elMessage']
   const elNotify: typeof import('../src/hooks/use-element')['elNotify']
   const filterRouters: typeof import('../src/hooks/use-permission')['filterRouters']
+  const filterTagRouters: typeof import('../src/hooks/use-permission')['filterTagRouters']
   const freshRouter: typeof import('../src/hooks/use-permission')['freshRouter']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
@@ -40,6 +41,7 @@ declare global {
   const isReactive: typeof import('vue')['isReactive']
   const isReadonly: typeof import('vue')['isReadonly']
   const isRef: typeof import('vue')['isRef']
+  const keyRef: typeof import('../src/hooks/use-keyboard')['keyRef']
   const lang: typeof import('../src/directives/lang')['default']
   const langTitle: typeof import('../src/hooks/use-common')['langTitle']
   const longpress: typeof import('../src/directives/example/longpress.js')['default']
@@ -60,6 +62,7 @@ declare global {
   const onServerPrefetch: typeof import('vue')['onServerPrefetch']
   const onUnmounted: typeof import('vue')['onUnmounted']
   const onUpdated: typeof import('vue')['onUpdated']
+  const onWatcherCleanup: typeof import('vue')['onWatcherCleanup']
   const progressClose: typeof import('../src/hooks/use-permission')['progressClose']
   const progressStart: typeof import('../src/hooks/use-permission')['progressStart']
   const provide: typeof import('vue')['provide']
@@ -95,7 +98,10 @@ declare global {
   const useCssVars: typeof import('vue')['useCssVars']
   const useDebuggerStore: typeof import('../src/store/debuger')['useDebuggerStore']
   const useElement: typeof import('../src/hooks/use-element')['useElement']
+  const useId: typeof import('vue')['useId']
+  const useKeyboard: typeof import('../src/hooks/use-keyboard')['useKeyboard']
   const useLink: typeof import('vue-router')['useLink']
+  const useModel: typeof import('vue')['useModel']
   const useMqttStore: typeof import('../src/store/mqtt')['useMqttStore']
   const useRoute: typeof import('vue-router')['useRoute']
   const useRouter: typeof import('vue-router')['useRouter']
@@ -103,6 +109,7 @@ declare global {
   const useSystemStore: typeof import('../src/store/system')['useSystemStore']
   const useTable: typeof import('../src/hooks/use-table')['useTable']
   const useTagsViewStore: typeof import('../src/store/tags-view')['useTagsViewStore']
+  const useTemplateRef: typeof import('vue')['useTemplateRef']
   const userRouteStore: typeof import('../src/store/routes')['userRouteStore']
   const watch: typeof import('vue')['watch']
   const watchEffect: typeof import('vue')['watchEffect']
@@ -114,6 +121,6 @@ declare global {
 // for type re-export
 declare global {
   // @ts-ignore
-  export type { Component, ComponentPublicInstance, ComputedRef, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, VNode, WritableComputedRef } from 'vue'
+  export type { Component, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
 }

@@ -1,9 +1,11 @@
 //scss 语法糖包含常用的布局方式 flex column
-@import './scss-suger.scss';
+@use 'scss-suger.scss';
 //重置 element-plus 样式
-@import './reset-elemenet-plus-style.scss';
+@use 'reset-elemenet-plus-style.scss';
 //动画文件
-@import './transition.scss';
+@use 'transition.scss';
+
+@use 'custom.scss';
 
 //reset style
 body {
@@ -92,16 +94,4 @@ output {
   &::-webkit-scrollbar-track:hover {
     background-color: #f8fafc;
   }
-}
-
-html, body {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-#app{
-  height: 100%;
-  width: 100%;
-  overflow: auto;
 }

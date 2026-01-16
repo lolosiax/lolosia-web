@@ -33,7 +33,7 @@ resizeHandler()
   transition: margin-left var(--sideBar-switch-duration);
   margin-left: var(--side-bar-width);
   position: relative;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   .nav-bar{

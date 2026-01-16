@@ -1,7 +1,7 @@
 <template>
   <div class="avatar-wrapper" :title="(userInfo?.realName || userInfo?.userName) + ' - 在线'">
-    <img :src="userInfo.avatar ?? userImage" alt="用户头像" class="user-avatar" />
-    <div class="user-avatar-status" :style="{ backgroundColor: !online ? 'red' : null }">
+    <img :src="avatar" alt="用户头像" class="user-avatar" :class="{ rounded }" @error="avatar0 = userImage" />
+    <div class="user-avatar-status" :style="{ backgroundColor: !online ? 'red' : undefined }">
       <el-popover :visible="!online" :effect="'dark'" :width="170">
         <template #reference>
           <div />
@@ -19,8 +19,15 @@
 import userImage from '@/assets/layout/user.png'
 import { useBasicStore } from '@/store/basic'
 
+const props = defineProps<{
+  rounded?: boolean
+}>()
+
 const basicStore = useBasicStore()
-const { settings, sidebar, userInfo } = basicStore
+const { userInfo } = basicStore
+
+const avatar0 = $ref() as string
+const avatar = computed(() => avatar0 || userInfo.avatar || userImage)
 
 const online = toRef(basicStore, 'online')
 </script>
@@ -37,6 +44,10 @@ const online = toRef(basicStore, 'online')
     width: 40px;
     height: 40px;
     border-radius: 10px;
+
+    &.rounded {
+      border-radius: 50%;
+    }
   }
 
   .user-avatar-status {

@@ -1,9 +1,11 @@
 //获取用户信息
 import request, { post } from '@/utils/request'
+import type { BasicModel } from '~/model'
 
-export interface IUser {
+export interface IUser extends BasicModel {
   id: string
   userName: string
+  realName: string
   password: string
   phone: string
   isUse: boolean
@@ -13,7 +15,7 @@ export interface IUser {
   avatar: string
 }
 
-export interface IUserRole {
+export interface IUserRole extends BasicModel {
   id: number
   userId: string
   roleId: number
@@ -32,22 +34,24 @@ export async function getMyRole(): Promise<IUserRole> {
 
 //登录
 export async function login(data): Promise<IUser> {
-  if (import.meta.env.VITE_BUILD_TIMESTAMP) {
-    // 此登录请求走https接口
-    return request({
-      baseURL: 'https://www.lolosia.top/home/api/',
-      url: '/login',
-      method: 'post',
-      responseType: 'json',
-      data
-    }).then((it) => it.data)
-  }
   return post('/login', data)
 }
 
 //退出登录
 export async function logout(): Promise<void> {
   return post('/logout')
+}
+
+export async function captcha(): Promise<{ image: string; id: number }> {
+  return post('/captcha')
+}
+
+export async function verify(id: number, code: string, userName: string, email: string) {
+  return post('/verify', { id, code, userName, email })
+}
+
+export async function register(userName: string, email: string, code: string, password: string) {
+  return post('/register', { code, userName, email, password })
 }
 
 export async function getUser(idList): Promise<IUser[]> {

@@ -18,11 +18,12 @@
 <script setup lang="ts" name="AppMain">
 import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia/dist/pinia'
-import { useRoute } from 'vue-router'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 import type { RouteLocationMatched } from 'vue-router'
-import type { RawConfig, RouteRawConfig } from '~/basic'
+import type { RouteRawConfig } from '~/basic'
 import { useBasicStore } from '@/store/basic'
 import { cloneDeep } from '@/hooks/use-common'
+
 const { settings, cachedViews, noMainPadding } = storeToRefs(useBasicStore())
 const route = useRoute()
 const key = computed(() => route.path)
@@ -43,7 +44,7 @@ onUnmounted(() => {
 })
 
 onBeforeRouteLeave((to, from) => {
-  if (to?.path != from?.path) {
+  if (to?.path != from?.path){
     noMainPadding.value = false
   }
 })
@@ -130,6 +131,7 @@ watch(
 .show-tag-view {
   height: calc(100vh - #{var(--nav-bar-height)} - #{var(--tag-view-height)}) !important;
 }
+
 .fixed-header + .app-main {
   padding-top: 50px;
 }

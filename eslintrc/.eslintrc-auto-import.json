@@ -116,6 +116,16 @@
     "WritableComputedRef": true,
     "toValue": true,
     "filterRouters": true,
-    "useMqttStore": true
+    "useMqttStore": true,
+    "keyRef": true,
+    "useKeyboard": true,
+    "DirectiveBinding": true,
+    "MaybeRef": true,
+    "MaybeRefOrGetter": true,
+    "filterTagRouters": true,
+    "onWatcherCleanup": true,
+    "useId": true,
+    "useModel": true,
+    "useTemplateRef": true
   }
 }

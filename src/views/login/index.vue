@@ -3,7 +3,9 @@
     <!--    <div class="login-hero">-->
     <!--      <img src="@/assets/layout/login.svg" :alt="settings.title" />-->
     <!--    </div>-->
-    <el-form ref="refLoginForm" class="login-form" :model="subForm" :rules="formRules">
+
+    <!-- 登录界面 -->
+    <el-form v-if="mode == 0" ref="refLoginForm" class="login-form" :model="subForm" :rules="formRules">
       <div class="title-container">
         <h3 class="title text-center">{{ settings.title }}</h3>
       </div>
@@ -32,45 +34,138 @@
         </span>
       </el-form-item>
       <div class="tip-message">{{ tipMessage }}</div>
-      <el-button :loading="subLoading" color="#E3B4D0" class="login-btn" size="default" @click.prevent="handleLogin">
+      <el-button :loading="subLoading" class="login-btn" type="primary" size="default" @click.prevent="handleLogin">
         登录
       </el-button>
+      <p class="change-mode">
+        还没有账户？点此
+        <span @click="mode = 1">注册</span>
+        或
+        <span @click="handleGuestLogin">访客登录</span>
+      </p>
     </el-form>
-    <div class="link">
-      <div>快捷方式</div>
-      <a href="/gitea/">Gitea</a>
-      <a href="/jenkins/">Jenkins</a>
-      <router-link to="/mqtt">V2X-MQTT</router-link>
-    </div>
-    <div class="icp">
-      鲁ICP备
-      <s>1145141919号-810</s>
+
+    <!-- 注册界面 1 -->
+    <el-form v-else-if="mode == 1" ref="refLoginForm" class="login-form" :model="subForm" :rules="formRules">
+      <div class="title-container">
+        <h3 class="title text-center">注册账户</h3>
+      </div>
+      <el-form-item prop="userName" :rules="formRules.isNotNull('用户名')">
+        <span class="svg-container">
+          <ElSvgIcon name="User" :size="14" />
+        </span>
+        <el-input v-model="subForm.userName" placeholder="用户名" />
+        <!--占位-->
+      </el-form-item>
+      <el-form-item prop="email" :rules="formRules.email('邮箱')">
+        <span class="svg-container">
+          <MenuIcon icon="envelope" style="font-size: 14px; left: 0" />
+        </span>
+        <el-input v-model="subForm.email" placeholder="邮箱" />
+        <!--占位-->
+      </el-form-item>
+      <el-form-item prop="captcha">
+        <div flex class="captcha">
+          <img :src="captchaData" alt="验证码" relative style="left: 2em" @click="reloadCaptcha" />
+          <el-input v-model="captchaValue" placeholder="验证码，点击图片刷新" />
+        </div>
+      </el-form-item>
+      <div class="tip-message">{{ tipMessage }}</div>
+      <el-button :loading="subLoading" class="login-btn" type="primary" size="default" @click.prevent="verifyRobotCode">
+        下一步
+      </el-button>
+      <p class="change-mode">
+        已经有账户了？点此
+        <span @click="mode = 0">登录</span>
+      </p>
+    </el-form>
+
+    <!-- 注册界面 2 -->
+    <el-form v-else-if="mode == 2" ref="refLoginForm" class="login-form" :model="subForm" :rules="formRules">
+      <div class="title-container">
+        <h3 class="title text-center">欢迎您，{{ subForm.userName }}</h3>
+      </div>
+      <div text-white m-b>请在您的邮箱 {{ subForm.email }} 中获取验证码，然后为账户设置一个新的密码</div>
+      <el-form-item prop="emailVerify" :rules="formRules.isNotNull('邮箱验证码')">
+        <span class="svg-container">
+          <menu-icon icon="envelope-paper" style="font-size: 12px; left: 0" />
+        </span>
+        <el-input v-model="subForm.emailVerify" placeholder="邮箱验证码" />
+        <!--占位-->
+      </el-form-item>
+      <el-form-item prop="password" :rules="formRules.isNotNull('密码')">
+        <span class="svg-container">
+          <ElSvgIcon name="Lock" :size="14" />
+        </span>
+        <el-input
+          :key="passwordType"
+          ref="refPassword"
+          v-model="subForm.password"
+          :type="passwordType"
+          name="password"
+          placeholder="密码"
+        />
+        <span class="show-pwd" @click="showPwd">
+          <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
+        </span>
+      </el-form-item>
+      <el-form-item>
+        <span class="svg-container">
+          <ElSvgIcon name="Lock" :size="14" />
+        </span>
+        <el-input
+          :key="passwordType"
+          v-model="subForm.password_2"
+          :type="passwordType"
+          placeholder="请再次输入一遍密码"
+        />
+        <span class="show-pwd" @click="showPwd">
+          <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
+        </span>
+      </el-form-item>
+      <div class="tip-message">{{ tipMessage }}</div>
+      <el-button :loading="subLoading" class="login-btn" type="primary" size="default" @click.prevent="handleRegistry">
+        注册
+      </el-button>
+      <p class="change-mode">
+        已经有账户了？点此
+        <span @click="mode = 0">登录</span>
+      </p>
+    </el-form>
+    <div v-show="false" class="icp">
+      鲁ICP备 000000000号-0
       <template v-if="buildEnv">
         <br />
         {{ buildEnv }}
       </template>
     </div>
-    <div class="copyright">© 2024 洛洛希雅Lolosia</div>
+    <div v-show="false" class="copyright">© 2026 Lolosia</div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { registrySSE } from '@/api/sse'
+import { getSSEConnect } from '@/utils/bus'
 import { reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBasicStore } from '@/store/basic'
 import { elMessage, useElement } from '@/hooks/use-element'
-import { getMyRole, login } from '@/api/user'
+import { captcha, getMyRole, login, register, verify } from '@/api/user'
 import type { FormInstance, InputInstance } from 'element-plus'
 import { settings as viteSettings } from '@/settings'
 import { ElMessage } from 'element-plus'
+import { setRouterFromDatabase } from '@/hooks/use-permission'
+import { roleRoutes } from '@/router'
 
 const buildEnv = (() => {
   const time = import.meta.env.VITE_BUILD_TIMESTAMP
-  const version = import.meta.env.PROJECT_VERSION
+  const version = import.meta.env.VITE_PROJECT_VERSION || import.meta.env.PROJECT_VERSION
   if (time) {
-    const build = import.meta.env.VITE_BUILD_DISPLAY_NAME
-    const hash = (import.meta.env.VITE_GIT_COMMIT || '').slice(0, 8)
-    return `当前版本 ${version}-${hash} 构建 ${build} 于 ${time}`
+    let build = import.meta.env.VITE_BUILD_DISPLAY_NAME
+    let hash = (import.meta.env.VITE_GIT_COMMIT || '').slice(0, 8)
+    build = build ? `构建 ${build} 于` : '构建于'
+    hash = hash ? `-${hash}` : ''
+    return `当前版本 ${version}${hash} ${build} ${time}`
   } else {
     return `版本 ${version}-dev`
   }
@@ -83,13 +178,56 @@ const formRules = useElement().formRules
 //form
 const subForm = reactive({
   userName: '',
-  password: ''
+  email: '',
+  emailVerify: '',
+  password: '',
+  password_2: ''
 })
 const state: any = reactive({
   otherQuery: {},
   redirect: undefined
 })
 const route = useRoute()
+
+onMounted(() => {
+  // reloadCaptcha()
+})
+
+let mode = $ref(0)
+let captchaData = $ref('')
+let captchaId = $ref(0)
+const captchaValue = $ref('')
+async function reloadCaptcha() {
+  const { image, id } = await captcha()
+  captchaData = `data:image/png;base64,${image}`
+  captchaId = id
+}
+
+function verifyRobotCode() {
+  refLoginForm.validate(async (valid) => {
+    if (valid) {
+      await verify(captchaId, captchaValue, subForm.userName, subForm.email)
+      // 进入注册账户的最后一步
+      mode = 2
+    }
+  })
+}
+
+function handleRegistry() {
+  refLoginForm.validate(async (valid) => {
+    if (valid) {
+      if (subForm.password != subForm.password_2) {
+        ElMessage.error('两次输入的密码不一致')
+        return
+      }
+      await register(subForm.userName, subForm.email, subForm.emailVerify, subForm.password)
+      ElMessage.success('注册成功！')
+      // 进行登录
+      mode = 0
+      loginFunc()
+    }
+  })
+}
 
 function getOtherQuery(query) {
   return Object.keys(query).reduce((acc, cur) => {
@@ -118,9 +256,13 @@ let subLoading = $ref(false)
 //tip message
 let tipMessage = $ref('')
 //sub form
-const refLoginForm: FormInstance = $ref(null)
+const refLoginForm: FormInstance = $ref(null) as any
 
 function handleLogin() {
+  // router.push('/category')
+  // eslint-disable-next-line no-constant-condition
+  // if (1 === 1) return
+
   refLoginForm.validate((valid) => {
     if (valid) {
       subLoading = true
@@ -131,6 +273,13 @@ function handleLogin() {
   })
 }
 
+function handleGuestLogin() {
+  subForm.userName = 'guest'
+  subForm.password = '123456'
+  subLoading = true
+  loginFunc()
+}
+
 const router = useRouter()
 const basicStore = useBasicStore()
 
@@ -139,21 +288,35 @@ async function loginFunc() {
     const data = await login(subForm)
     elMessage('登录成功')
     basicStore.setToken(data?.Authorization)
-    const role = await getMyRole()
-    basicStore.setUserInfo({
-      userInfo: data,
-      roles: [role.roleType],
-      codes: [role.roleId]
-    })
+    basicStore.keepSession = true
+
+    // const role = await getMyRole()
+    // basicStore.setUserInfo({
+    //   userInfo: data,
+    //   roles: [role.roleType],
+    //   codes: [role.roleId]
+    // })
+    //
+    // setRouterFromDatabase(roleRoutes)
+    // basicStore.getUserInfo = true
+
+    // 注册SSE的用户信息
+    const sse = getSSEConnect()
+    if (sse != null) {
+      await registrySSE(sse.id)
+    }
+
     // router.push("/").catch(e => console.error(e));
     if (route.query?.redirect) {
       let url = route.query.redirect as string
       if (viteSettings.viteBasePath.endsWith('/') && url.startsWith('/')) {
         url = url.replace(/^\//, '')
       }
-      window.location.href = viteSettings.viteBasePath + url
+      // window.location.href = viteSettings.viteBasePath + url
+      await router.push(url || '/dashboard')
     } else {
-      window.location.href = viteSettings.viteBasePath
+      await router.push('/dashboard')
+      // window.location.href = viteSettings.viteBasePath
     }
   } catch (e: Error | any) {
     tipMessage = e?.message
@@ -185,7 +348,7 @@ $dark_gray: #333;
 $gray: #999;
 $light_gray: #eee;
 .login-container {
-  height: 100vh;
+  height: 100dvh;
   position: relative;
   overflow-y: hidden;
   width: 100%;
@@ -210,6 +373,31 @@ $light_gray: #eee;
     @media only screen and (max-width: 768px) {
       margin-right: auto;
       margin-left: auto;
+    }
+
+    .captcha {
+      img {
+        cursor: pointer;
+      }
+    }
+
+    .change-mode {
+      margin: 0;
+      text-align: center;
+      color: white;
+      position: relative;
+      top: 20px;
+      opacity: 75%;
+
+      &:hover {
+        opacity: 1;
+      }
+
+      span {
+        color: var(--el-color-primary-light-3);
+        text-decoration: underline;
+        cursor: pointer;
+      }
     }
   }
 
@@ -307,7 +495,7 @@ $light_gray: #eee;
 //登录按钮
 .login-btn {
   width: 100%;
-  margin-bottom: 30px;
+  //margin-bottom: 30px;
 }
 
 .show-pwd {

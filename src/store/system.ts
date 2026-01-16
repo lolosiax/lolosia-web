@@ -7,5 +7,8 @@ export const useSystemStore = defineStore('system', {
         searchKey: ''
       }
     }
+  },
+  persist: {
+    storage: sessionStorage
   }
 })

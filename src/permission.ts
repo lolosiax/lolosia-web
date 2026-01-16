@@ -1,15 +1,19 @@
 import router, { roleRoutes } from '@/router'
-import { filterRouters, progressClose, progressStart, setRouterFromDatabase } from '@/hooks/use-permission'
+import { filterRouters, filterTagRouters, progressClose, progressStart, setRouterFromDatabase } from '@/hooks/use-permission'
 import { useBasicStore } from '@/store/basic'
 import { getMyInfo, getMyRole } from '@/api/user'
-import { langTitle } from '@/hooks/use-common'
+import { getMenuConfig } from '@/api/menu'
+import settings from '@/settings'
 
 //路由进入前拦截
 //to:将要进入的页面 vue-router4.0 不推荐使用next()
-const whiteList = ['/mqtt', '/login', '/404', '/401', '/500'] // no redirect whitelist
+const whiteList = ['/login', '/404', '/401', '/500'] // no redirect whitelist
 router.beforeEach(async (to) => {
   progressStart()
-  document.title = langTitle(to.meta?.title) // i18 page title
+  // document.title = langTitle(to.meta?.title) // i18 page title
+  let title = (to.meta?.title ?? settings.title) as string
+  if (title !== settings.title) title = `${title} - ${settings.title}`
+  document.title = title
   const basicStore = useBasicStore()
   if (to.path === '/500') {
     return true
@@ -17,12 +21,13 @@ router.beforeEach(async (to) => {
   if (to.path === '/login') {
     return true
   }
+
   //1.判断token
   if (basicStore.token) {
     //2.判断是否获取用户信息
     if (!basicStore.getUserInfo) {
       try {
-        const [userData, userRole] = await Promise.all([getMyInfo(), getMyRole()])
+        const [userData, userRole, exp] = await Promise.all([getMyInfo(), getMyRole(), getMenuConfig()])
         //3.保存用户信息到store
         basicStore.setUserInfo({
           userInfo: userData,
@@ -30,8 +35,10 @@ router.beforeEach(async (to) => {
           codes: [userRole.roleId]
         })
         //const routes = await getRouterList({ roleId: userRole.roleId })
-        const routes = roleRoutes
-        filterRouters(routes as any, userRole.type)
+        const routes = roleRoutes()
+        filterRouters(routes, userRole.type)
+        filterTagRouters(routes, exp)
+
         //4.动态路由权限筛选
         setRouterFromDatabase(routes)
         //5.再次执行路由跳转
@@ -45,6 +52,14 @@ router.beforeEach(async (to) => {
       return true
     }
   } else {
+    if (!basicStore.allRoutes.length) {
+      setRouterFromDatabase(roleRoutes())
+      basicStore.getUserInfo = true
+      return { ...to, replace: true }
+    }
+
+    if (window) return true
+
     if (!whiteList.includes(to.path)) {
       return `/login?redirect=${to.path}`
     } else {

@@ -1,0 +1,51 @@
+:root {
+  --lolosia-color-primary: #c296cd;
+  --lolosia-color-primary-light-3: #D2B1DB;
+  --lolosia-color-primary-light-5: #dfcde6;
+  --lolosia-color-primary-dark-2: #a480ab;
+}
+
+
+.el-dialog-liquid {
+  background: rgba(0, 0, 0, 0.1);
+
+  .el-overlay-dialog {
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    max-height: 100vh;
+    overflow: hidden;
+
+    .el-dialog {
+      background: rgba(255, 255, 255, 0.6); /* 半透明白色背景 */
+      backdrop-filter: blur(10px); /* 磨砂效果（核心） */
+      -webkit-backdrop-filter: blur(10px); /* 兼容Safari */
+      border-radius: 16px; /* 大圆角 */
+      box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.37); /* 扩散白色阴影 */
+      border: 1px solid rgba(255, 255, 255, 0.18); /* 边框模拟玻璃反光 */
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      max-height: calc(100vh - 40px);
+      display: flex;
+      flex-direction: column;
+
+      .el-dialog__header {
+        background: rgba(255, 255, 255, 0.5);
+        padding: 16px 16px 8px 16px;
+
+        .el-dialog__title {
+          font-size: 16px;
+          font-weight: bold;
+        }
+      }
+
+      .el-dialog__body {
+        padding: 16px;
+        flex: 1;
+        overflow: hidden;
+      }
+    }
+  }
+}

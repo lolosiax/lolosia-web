@@ -1,30 +1,55 @@
-import { post } from '@/utils/request'
+import request from '@/utils/request'
 
 export function getList(data) {
-  return post('/api/role/queryRoleByPage', data)
+  return request({
+    url: '/role/queryRoleByPage',
+    method: 'post',
+    data
+  })
 }
 
 export function doAdd(data) {
-  return post('/api/role/create', data)
+  return request({
+    url: '/role/create',
+    method: 'post',
+    data
+  })
 }
 export function doUpdate(data) {
-  return post('/api/role/update', data)
+  return request({
+    url: '/role/update',
+    method: 'post',
+    data
+  })
 }
 
 export function doDelete(data) {
-  return post('/api/role/destroy', data)
+  return request({
+    url: '/role/destroy',
+    method: 'post',
+    data
+  })
 }
 /**
  * 获取角色列表
  * @return {Promise<AxiosResponse<{id: number, type:string, roleName: string}[]>>}
  */
 export function getRoleList() {
-  return post('/api/role/list')
+  return request({
+    url: '/role/list',
+    method: 'post'
+  })
 }
 
 /**
  * 根据用户ID获取角色ID
  */
 export function getRoleByUserId(userId) {
-  return post('/api/userRole/getByUserId', { userId })
+  return request({
+    url: '/userRole/getByUserId',
+    method: 'post',
+    data: {
+      userId
+    }
+  })
 }

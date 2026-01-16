@@ -9,11 +9,14 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppPage: typeof import('./../src/components/AppPage.vue')['default']
     ElSvgIcon: typeof import('./../src/components/ElSvgIcon.vue')['default']
+    IconButton: typeof import('./../src/components/IconButton.vue')['default']
     IconSelector: typeof import('./../src/components/IconSelector.vue')['default']
+    LiquidBox: typeof import('./../src/components/LiquidBox.vue')['default']
     MenuIcon: typeof import('./../src/components/MenuIcon.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SvgIcon: typeof import('./../src/icons/SvgIcon.vue')['default']
+    TechStyleCard: typeof import('./../src/components/TechStyleCard.vue')['default']
     TestUnit: typeof import('./../src/components/TestUnit.vue')['default']
   }
 }

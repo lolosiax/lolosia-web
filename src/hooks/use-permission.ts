@@ -1,17 +1,12 @@
-import router, { asyncRoutes, constantRoutes } from '@/router'
-import { useBasicStore } from '@/store/basic'
 import NProgress from 'nprogress'
-import 'nprogress/nprogress.css'
 import type { RouteRecordName } from 'vue-router'
+import Layout from '@/layout/default/index.vue'
+import router, { asyncRoutes, constantRoutes } from '@/router'
+import 'nprogress/nprogress.css'
+import { useBasicStore } from '@/store/basic'
 import { isArray } from 'xe-utils'
 import type { RouterTypes } from '~/basic'
-
-export function filterRouters<
-  T extends {
-    meta?: { roles?: string[] }
-    children?: T[]
-  }
->(menuList: T[], role: string) {
+export function filterRouters(menuList: RouterTypes, role: string) {
   const out = menuList.filter((it) => it.meta?.roles?.includes(role) ?? true)
   for (const t of out) {
     if (t.children) filterRouters(t.children, role)
@@ -20,17 +15,27 @@ export function filterRouters<
   menuList.push(...out)
 }
 
+export function filterTagRouters(menuList: RouterTypes, tags: { [P: string]: boolean }) {
+  const out = menuList.filter((it) => tags[it.meta?.tag || 'default'])
+  for (const t of out) {
+    if (t.children) filterTagRouters(t.children, tags)
+  }
+  menuList.length = 0
+  menuList.push(...out)
+}
+
+
 //从数据库设置文本路由
 export function setRouterFromDatabase(menuList) {
   const basicStore = useBasicStore()
-  const accessRoutes: RouterTypes = menuList
+  const accessRoutes = menuList
 
   // @ts-ignore
   const views = import.meta.glob('../views/**/*.vue') as Record<string, () => Promise<Component>>
 
   function scanRouter(items: any[]) {
     for (const item of items) {
-      if (item.component === 'Layout') item.component = () => import('@/layout/default/index.vue')
+      if (item.component === 'Layout') item.component = async () => Layout
       else if (typeof item.component === 'string') {
         let url: string = item.component
         if (url.startsWith('@/')) {
@@ -53,9 +58,8 @@ export function setRouterFromDatabase(menuList) {
   }
 
   scanRouter(accessRoutes)
-
   accessRoutes.forEach((route) => router.addRoute(route))
-  asyncRoutes.forEach((item) => router.addRoute(item))
+  asyncRoutes().forEach((item) => router.addRoute(item))
   basicStore.setFilterAsyncRoutes(accessRoutes)
 }
 
@@ -66,9 +70,9 @@ export function resetRouter() {
   router.getRoutes().forEach((fItem) => {
     if (fItem.name) routeNameSet.add(fItem.name)
   })
-  routeNameSet.forEach((setItem) => router.removeRoute(setItem))
+  routeNameSet.forEach((setItem) => router.removeRoute(setItem!))
   //新增constantRoutes
-  constantRoutes.forEach((feItem) => router.addRoute(feItem))
+  constantRoutes().forEach((feItem) => router.addRoute(feItem))
 }
 
 //重置登录状态
