@@ -1,12 +1,47 @@
 <script setup lang="ts">
 // Hero区 - 首页
+import { ref, onMounted, onUnmounted } from 'vue'
+
+// 鼠标位置和偏移量
+const mouseX = ref(0)
+const mouseY = ref(0)
+const offsetX = ref(0)
+const offsetY = ref(0)
+
+// 最大偏移量（可调整）
+const maxOffset = 10
+
+// 监听鼠标移动事件
+const handleMouseMove = (e: MouseEvent) => {
+  // 获取屏幕中心坐标
+  const centerX = window.innerWidth / 2
+  const centerY = window.innerHeight / 2
+  
+  // 计算鼠标相对于中心的偏移比例（-1 到 1）
+  const ratioX = (e.clientX - centerX) / centerX
+  const ratioY = (e.clientY - centerY) / centerY
+  
+  // 计算元素偏移量 - 保持统一方向，鼠标右移所有元素右移，左移所有元素左移
+  offsetX.value = ratioX * maxOffset
+  offsetY.value = ratioY * maxOffset
+}
+
+// 生命周期钩子：组件挂载时添加事件监听
+onMounted(() => {
+  window.addEventListener('mousemove', handleMouseMove)
+})
+
+// 生命周期钩子：组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('mousemove', handleMouseMove)
+})
 </script>
 
 <template>
   <section class="hero-section">
     <!-- 左侧内容 -->
     <div class="left-content">
-      <div class="tilted-box animate-on-enter">
+        <div class="tilted-box animate-on-enter" :style="{ transform: `rotate(-5deg) translate(${offsetX * 0.3}px, ${offsetY * 0.3}px)` }">
         <h1 class="main-title">洛洛希雅</h1>
         <span class="subtitle">Lolosia</span>
 
@@ -31,7 +66,7 @@
 
     <!-- 右侧展示区 -->
     <div class="right-content">
-      <div class="character-container animate-on-enter">
+      <div class="character-container animate-on-enter" :style="{ transform: `translate(${offsetX * 0.5}px, ${offsetY * 0.5}px)` }">
         <div class="character-illustration">
           <!-- 角色立绘占位符 -->
           <div class="character-placeholder">
@@ -44,9 +79,9 @@
 
       <!-- 背景装饰 -->
       <div class="background-decoration">
-        <div class="floating-element element-1" />
-        <div class="floating-element element-2" />
-        <div class="floating-element element-3" />
+        <div class="floating-element element-1" :style="{ transform: `translate(${offsetX * 1.5}px, ${offsetY * 1.5}px)` }" />
+        <div class="floating-element element-2" :style="{ transform: `translate(${offsetX * 1.2}px, ${offsetY * 1.2}px)` }" />
+        <div class="floating-element element-3" :style="{ transform: `translate(${offsetX * 1.8}px, ${offsetY * 1.8}px)` }" />
       </div>
     </div>
   </section>

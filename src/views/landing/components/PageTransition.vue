@@ -87,16 +87,16 @@ watch(
   () => props.currentSection,
   (newSection, oldSection) => {
     if (newSection !== oldSection) {
-      // 移动sections-container到对应位置
+      // 先触发目标页面的进入动画
+      triggerSectionEnter(newSection)
+      
+      // 同时移动sections-container到对应位置
       const sectionsContainer = document.querySelector('.sections-container')
       if (sectionsContainer) {
         gsap.to(sectionsContainer, {
           xPercent: (-100 * newSection) / props.totalSections,
           duration: 0.8,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            triggerSectionEnter(newSection)
-          }
+          ease: 'power2.inOut'
         })
       }
     }
