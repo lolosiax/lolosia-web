@@ -1,6 +1,10 @@
 <script setup lang="ts">
 // Hero区 - 首页
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import moment from 'moment-mini'
+import type { LunarToSolarResult } from 'lunar-calendar'
+import { lunarToSolar } from 'lunar-calendar'
+import CopyRight from '@/views/landing/components/CopyRight.vue'
 
 // 鼠标位置和偏移量
 const mouseX = ref(0)
@@ -11,16 +15,27 @@ const offsetY = ref(0)
 // 最大偏移量（可调整）
 const maxOffset = 10
 
+const age = computed(() => {
+  return moment().diff('2002-04-15', 'years')
+})
+
+const birthDay = computed(() => {
+  const year0 = new Date().getFullYear()
+
+  const { year, month, day } = lunarToSolar(year0, 3, 3) as LunarToSolarResult
+  return `${year}年${month}月${day}日`
+})
+
 // 监听鼠标移动事件
 const handleMouseMove = (e: MouseEvent) => {
   // 获取屏幕中心坐标
   const centerX = window.innerWidth / 2
   const centerY = window.innerHeight / 2
-  
+
   // 计算鼠标相对于中心的偏移比例（-1 到 1）
   const ratioX = (e.clientX - centerX) / centerX
   const ratioY = (e.clientY - centerY) / centerY
-  
+
   // 计算元素偏移量 - 保持统一方向，鼠标右移所有元素右移，左移所有元素左移
   offsetX.value = ratioX * maxOffset
   offsetY.value = ratioY * maxOffset
@@ -41,24 +56,39 @@ onUnmounted(() => {
   <section class="hero-section">
     <!-- 左侧内容 -->
     <div class="left-content">
-        <div class="tilted-box animate-on-enter" :style="{ transform: `rotate(-5deg) translate(${offsetX * 0.3}px, ${offsetY * 0.3}px)` }">
+      <div
+        class="tilted-box animate-on-enter"
+        :style="{ transform: `rotate(-5deg) translate(${offsetX * 0.3}px, ${offsetY * 0.3}px)` }"
+      >
         <h1 class="main-title">洛洛希雅</h1>
         <span class="subtitle">Lolosia</span>
 
-        <p class="intro-text">温柔体贴的治愈系大姐姐，擅长协调社团活动， 担任多社团重要角色，是玩家间的情感纽带。</p>
+        <p class="intro-text">
+          温柔体贴的治愈系姐姐，偏爱那份热闹的烟火气，流连于熙攘的街角，享受着人群的喧嚣与友谊的温暖。
+          <br />
+          现任职于抚眠屋，闲暇时也是许多知名咖啡厅的常客。见到心爱的好友时，最爱的便是伸手揉揉对方的脑袋，给对方一个温暖的贴贴。
+        </p>
 
         <div class="character-info">
           <div class="info-item">
-            <span class="label">昵称</span>
+            <span class="label">姓名</span>
             <span class="value">洛洛希雅</span>
           </div>
           <div class="info-item">
             <span class="label">年龄</span>
-            <span class="value">20-25岁</span>
+            <span class="value">{{ age }}岁</span>
           </div>
           <div class="info-item">
             <span class="label">身高</span>
             <span class="value">165cm</span>
+          </div>
+          <div class="info-item">
+            <span class="label">生日</span>
+            <span class="value">三月初三</span>
+          </div>
+          <div class="info-item">
+            <span class="label">生日（本年度）</span>
+            <span class="value">{{ birthDay }}</span>
           </div>
         </div>
       </div>
@@ -66,7 +96,10 @@ onUnmounted(() => {
 
     <!-- 右侧展示区 -->
     <div class="right-content">
-      <div class="character-container animate-on-enter" :style="{ transform: `translate(${offsetX * 0.5}px, ${offsetY * 0.5}px)` }">
+      <div
+        class="character-container animate-on-enter"
+        :style="{ transform: `translate(${offsetX * 0.5}px, ${offsetY * 0.5}px)` }"
+      >
         <div class="character-illustration">
           <!-- 角色立绘占位符 -->
           <div class="character-placeholder">
@@ -79,11 +112,21 @@ onUnmounted(() => {
 
       <!-- 背景装饰 -->
       <div class="background-decoration">
-        <div class="floating-element element-1" :style="{ transform: `translate(${offsetX * 1.5}px, ${offsetY * 1.5}px)` }" />
-        <div class="floating-element element-2" :style="{ transform: `translate(${offsetX * 1.2}px, ${offsetY * 1.2}px)` }" />
-        <div class="floating-element element-3" :style="{ transform: `translate(${offsetX * 1.8}px, ${offsetY * 1.8}px)` }" />
+        <div
+          class="floating-element element-1"
+          :style="{ transform: `translate(${offsetX * 1.5}px, ${offsetY * 1.5}px)` }"
+        />
+        <div
+          class="floating-element element-2"
+          :style="{ transform: `translate(${offsetX * 1.2}px, ${offsetY * 1.2}px)` }"
+        />
+        <div
+          class="floating-element element-3"
+          :style="{ transform: `translate(${offsetX * 1.8}px, ${offsetY * 1.8}px)` }"
+        />
       </div>
     </div>
+    <CopyRight />
   </section>
 </template>
 

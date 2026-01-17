@@ -35,6 +35,7 @@
     "gsap": "^3.14.2",
     "hash.js": "^1.1.7",
     "js-error-collection": "^1.0.8",
+    "lunar-calendar": "^0.1.4",
     "markdown-it": "^14.1.0",
     "mitt": "3.0.1",
     "moment-mini": "2.29.4",

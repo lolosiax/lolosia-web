@@ -24,7 +24,7 @@
         </li>
       </ul>
     </div>
-    
+
     <!-- 子站点入口 -->
     <div class="subsite-entrance">
       <div class="subsite-icons">
@@ -38,11 +38,6 @@
           <div class="icon-circle"></div>
         </a>
       </div>
-    </div>
-    
-    <!-- 版权信息 -->
-    <div class="copyright">
-      <p>© 2024 洛洛希雅 Lolosia. All rights reserved.</p>
     </div>
   </nav>
 </template>
@@ -60,7 +55,7 @@
   padding: 0 50px;
   z-index: 100;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%);
-  
+
   .main-nav {
     .nav-list {
       display: flex;
@@ -68,7 +63,7 @@
       list-style: none;
       margin: 0;
       padding: 0;
-      
+
       .nav-item {
         .nav-link {
           text-decoration: none;
@@ -77,7 +72,7 @@
           font-weight: 500;
           transition: all 0.3s ease;
           position: relative;
-          
+
           &::after {
             content: '';
             position: absolute;
@@ -88,10 +83,10 @@
             background: var(--lolosia-color-primary);
             transition: width 0.3s ease;
           }
-          
+
           &:hover {
             color: var(--lolosia-color-primary-dark-2);
-            
+
             &::after {
               width: 100%;
             }
@@ -100,15 +95,15 @@
       }
     }
   }
-  
+
   .subsite-entrance {
     .subsite-icons {
       display: flex;
       gap: 20px;
-      
+
       .subsite-icon {
         text-decoration: none;
-        
+
         .icon-circle {
           width: 40px;
           height: 40px;
@@ -116,7 +111,7 @@
           border-radius: 50%;
           transition: all 0.3s ease;
           border: 2px solid var(--lolosia-color-primary-light-3);
-          
+
           &:hover {
             transform: scale(1.1);
             background: rgba(210, 177, 219, 0.4);
@@ -126,13 +121,13 @@
       }
     }
   }
-  
+
   .copyright {
     position: absolute;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    
+
     p {
       font-size: 12px;
       color: #999;

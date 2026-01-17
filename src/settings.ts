@@ -1,6 +1,6 @@
 import type { SettingsConfig } from '~/basic'
 export const settings: SettingsConfig = {
-  title: '洛洛希雅的小网站',
+  title: '洛洛希雅的午后梦乡',
   /**
    * @type {boolean} true | false
    * @description Whether show the logo in sidebar

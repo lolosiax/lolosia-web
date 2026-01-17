@@ -11,6 +11,7 @@ import HeroSection from './components/sections/HeroSection.vue'
 import AboutSection from './components/sections/AboutSection.vue'
 import PhotoWallSection from './components/sections/PhotoWallSection.vue'
 import GameScenesSection from './components/sections/GameScenesSection.vue'
+import CopyRight from '@/views/landing/components/CopyRight.vue'
 
 // 管理当前section
 const currentSection = ref(0)
