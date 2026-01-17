@@ -9,7 +9,7 @@ const listeners: string[] = []
 let source: ApiEventSource | null = null
 
 type Mitt = typeof instance
-type EventBus = Omit<Mitt, "on" | "off"> & {
+type EventBus = Omit<Mitt, 'on' | 'off'> & {
   on<T>(key: string, callback: (it: T) => void): void
   off(key: string, callback?: any)
 }
@@ -45,20 +45,21 @@ function registryListener(name: string) {
 const export1 = createProxy(instance)
 
 export default export1
-export function useEventBus() : EventBus {
+export function useEventBus(): EventBus {
   return export1
 }
 export const getSSEConnect = () => source
 
 export async function initSSEConnect() {
+  const store = useBasicStore()
+
   while (true) {
     try {
       source = await sse()
-      if (source != null) {
+      if (store.token) {
         try {
           await registrySSE(source.id)
-        }
-        catch {
+        } catch {
           source.close()
         }
       }
