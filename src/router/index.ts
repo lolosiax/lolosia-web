@@ -28,7 +28,12 @@ export function constantRoutes(): RouterTypes {
     },
     {
       path: '/',
-      component: () => import('@/views/landing/index.vue'),
+      component: () => import('@/views/landingv2/index.vue'),
+      hidden: true
+    },
+    {
+      path: '/lolosia',
+      component: () => import('@/views/lolosia-hero/index.vue'),
       hidden: true
     },
     {
