@@ -4,7 +4,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import moment from 'moment-mini'
 import type { LunarToSolarResult } from 'lunar-calendar'
 import { lunarToSolar } from 'lunar-calendar'
-import CopyRight from '@/views/landing/components/CopyRight.vue'
+import CopyRight from '@/views/lolosia-hero/components/CopyRight.vue'
 
 // 鼠标位置和偏移量
 const mouseX = ref(0)
@@ -104,7 +104,7 @@ onUnmounted(() => {
           <!-- 角色立绘占位符 -->
           <div class="character-placeholder">
             <div class="character-shape">
-              <img src="@/views/landing/assets/Image_960506661952634.webp" alt="角色立绘" />
+              <img src="@/views/lolosia-hero/assets/Image_960506661952634.webp" alt="角色立绘" />
             </div>
           </div>
         </div>
