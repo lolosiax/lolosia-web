@@ -28,7 +28,7 @@ export function constantRoutes(): RouterTypes {
     },
     {
       path: '/',
-      component: () => import('@/views/landingv2/index.vue'),
+      component: () => import('@/views/landing/index.vue'),
       hidden: true
     },
     {
