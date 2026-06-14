@@ -298,8 +298,8 @@ onUnmounted(() => {
 
                     <HalftoneCanvas
                       :dot-size="8"
-                      :transition-start="0.6"
-                      :transition-end="1"
+                      :transition-start="0.45"
+                      :transition-end="0.85"
                       :dotColor="card.themeColor"
                       easing="ease-out"
                     />
@@ -344,8 +344,8 @@ onUnmounted(() => {
                     />
                     <HalftoneCanvas
                       :dot-size="8"
-                      :transition-start="0.7"
-                      :transition-end="0.95"
+                      :transition-start="0.55"
+                      :transition-end="0.85"
                       :dotColor="rightCard.themeColor"
                       easing="ease-out"
                     />
@@ -432,7 +432,6 @@ $card-radius: 16px;
   .content-wrapper {
     position: relative;
     z-index: 1;
-    display: flex;
     width: 100%;
     height: 100%;
 
@@ -451,12 +450,13 @@ $card-radius: 16px;
     //  LEFT PANEL
     // ═══════════════════════════
     .left-panel {
-      flex: 0 0 48%;
+      position: absolute;
+      inset: 0 50% 0 0;
+
       display: flex;
       flex-direction: column;
       justify-content: center;
       padding: 60px 50px 40px;
-      position: relative;
 
       .welcome-container {
         max-width: 400px;
@@ -630,19 +630,29 @@ $card-radius: 16px;
     //  RIGHT PANEL — Slanted Grid
     // ═══════════════════════════
     .right-panel {
-      flex: 0 0 42%;
+      position: absolute;
+      right: 10%;
+      top: 0;
+      width: 700px;
+      height: 100%;
+
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px 60px 40px 20px;
-      position: relative;
       overflow: clip;
       overflow-clip-margin: 30px;
 
+      @media screen and (max-width: 1600px) {
+        right: 5%;
+      }
+
+      @media screen and (min-width: 2000px) {
+        right: 15%;
+      }
+
       .skew-container {
         width: 100%;
-        height: 100%;
-        max-height: 620px;
+        height: 620px;
         transform-origin: center center;
         position: relative;
 
