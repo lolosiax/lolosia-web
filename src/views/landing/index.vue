@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getRoot } from '@/utils/request'
+import HalftoneCanvas from './components/HalftoneCanvas.vue'
 
 const router = useRouter()
 const bgCanvas = ref<HTMLCanvasElement | null>(null)
@@ -24,6 +25,9 @@ interface CardItem {
   description: string
   icon: string
   bgClass: string
+  themeColor: string
+  borderColor: string
+  themeRgb: string
   path?: string
   external?: string
   bgImage?: string | Ref<string>
@@ -38,6 +42,9 @@ const cards: CardItem[] = reactive([
     description: '定制化解决方案 · 赋能商业创新',
     icon: '⊞',
     bgClass: 'bg-card-1',
+    themeColor: 'rgb(125 142 209 / 1)',
+    borderColor: 'rgb(144 159 230 / 0.75)',
+    themeRgb: '125, 142, 209',
     path: '/'
   },
   {
@@ -47,6 +54,9 @@ const cards: CardItem[] = reactive([
     description: '虚拟与现实 · 无缝融合体验',
     icon: '◈',
     bgClass: 'bg-card-2',
+    themeColor: 'rgb(229 166 239 / 1)',
+    borderColor: 'rgb(215 152 223 / 0.75)',
+    themeRgb: '229, 166, 239',
     path: '/'
   },
   {
@@ -56,6 +66,9 @@ const cards: CardItem[] = reactive([
     description: '二次元角色 · 沉浸式社交',
     icon: '✦',
     bgClass: 'bg-card-3',
+    themeColor: 'rgba(79, 172, 254, 1)',
+    borderColor: 'rgba(79, 172, 254, 0.75)',
+    themeRgb: '79, 172, 254',
     external: 'https://vrc.group/VRCKIG.4693',
     bgImage: kigurumiCardBg
   },
@@ -66,6 +79,9 @@ const cards: CardItem[] = reactive([
     description: '虚拟偶像个人主页 · 进入梦幻世界',
     icon: '♡',
     bgClass: 'bg-card-4',
+    themeColor: 'rgba(194, 150, 205, 1)',
+    borderColor: 'rgba(194, 150, 205, 0.75)',
+    themeRgb: '194, 150, 205',
     path: '/lolosia',
     bgImage: lolosiaCardBg,
     hoverImage: lolosiaHoverBg
@@ -266,10 +282,10 @@ onUnmounted(() => {
                 @click="handleCardClick(card)"
                 @mouseenter="hoveringImage = card.hoverImage || card.bgImage"
                 @mouseleave="hoveringImage = undefined"
+                :style="{ '--card-rgb': card.themeRgb }"
               >
-                <div class="card-border">
-                  <div class="card-content">
-                    <!-- Decorative background image layer -->
+                <div class="card-border" :style="{ borderColor: card.borderColor }">
+                  <div class="card-content-box">
                     <div
                       class="card-bg"
                       :class="card.bgClass"
@@ -280,19 +296,26 @@ onUnmounted(() => {
                       }"
                     />
 
-                    <!-- Manga-style scatter gradient (bottom portion) -->
-                    <div class="card-scatter" />
+                    <HalftoneCanvas
+                      :dot-size="8"
+                      :transition-start="0.6"
+                      :transition-end="1"
+                      :dotColor="card.themeColor"
+                      easing="ease-out"
+                    />
 
-                    <!-- Card content -->
                     <div class="card-content">
                       <div class="card-icon-frame">
                         <span class="card-icon">{{ card.icon }}</span>
                       </div>
-                      <div class="card-title">{{ card.title }}</div>
+                      <div class="card-title">
+                        <div>
+                          {{ card.title }}
+                        </div>
+                      </div>
                       <div class="card-subtitle">{{ card.subtitle }}</div>
                     </div>
 
-                    <!-- Hover glow -->
                     <div class="card-shine" />
                   </div>
                 </div>
@@ -306,9 +329,10 @@ onUnmounted(() => {
                 @click="handleCardClick(rightCard)"
                 @mouseenter="hoveringImage = rightCard.hoverImage || rightCard.bgImage"
                 @mouseleave="hoveringImage = undefined"
+                :style="{ '--card-rgb': rightCard.themeRgb }"
               >
-                <div class="card-border">
-                  <div class="card-content">
+                <div class="card-border" :style="{ borderColor: rightCard.borderColor }">
+                  <div class="card-content-box">
                     <div
                       class="card-bg"
                       :class="rightCard.bgClass"
@@ -318,21 +342,20 @@ onUnmounted(() => {
                         backgroundPosition: 'center'
                       }"
                     />
-                    <div class="card-scatter" />
+                    <HalftoneCanvas
+                      :dot-size="8"
+                      :transition-start="0.7"
+                      :transition-end="0.95"
+                      :dotColor="rightCard.themeColor"
+                      easing="ease-out"
+                    />
 
                     <div class="card-content">
                       <div class="card-avatar">
-                        <div class="avatar-ring">
-                          <span class="avatar-icon">{{ rightCard.icon }}</span>
-                        </div>
+                        <img src="https://ssl.lolosia.moe/assets/avatar.webp" class="avatar-img" />
                       </div>
-                      <div class="card-title">{{ rightCard.title }}</div>
-                      <div class="card-subtitle">{{ rightCard.subtitle }}</div>
+                      <div class="card-title">{{ rightCard.title }} {{ rightCard.subtitle }}</div>
                       <div class="card-description">{{ rightCard.description }}</div>
-                      <div class="card-cta">
-                        <span>进入主页</span>
-                        <span class="cta-arrow">→</span>
-                      </div>
                     </div>
 
                     <div class="card-shine" />
@@ -651,6 +674,7 @@ $card-radius: 16px;
               transition: all 0.45s cubic-bezier(0.23, 1, 0.32, 1);
               transform: translateY(0) scale(1);
               min-height: 0;
+              flex: 1;
 
               &:hover {
                 transform: translateY(-5px) scale(1.02);
@@ -685,18 +709,20 @@ $card-radius: 16px;
                 overflow: hidden;
                 height: 100%;
                 width: 100%;
+                border: 5px solid;
 
-                // Outer card-content (skew wrapper)
-                .card-content {
+                // Outer card-content-box (skew wrapper)
+                .card-content-box {
                   height: 100%;
                   width: 100%;
-                  transform: skewX(3deg);
+                  transform: skewX(5deg);
+                  position: relative;
                 }
 
                 // ── Card Background (CSS art) ──
                 .card-bg {
                   position: absolute;
-                  inset: -5%;
+                  inset: -7%;
                   z-index: 0;
                   transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
                   overflow: hidden;
@@ -761,49 +787,70 @@ $card-radius: 16px;
                   }
                 }
 
-                // ── Manga-style Scatter Dots ──
-                .card-scatter {
-                  position: absolute;
-                  bottom: 0;
-                  left: 0;
-                  width: 100%;
-                  height: 58%;
-                  z-index: 1;
-                  pointer-events: none;
-                  overflow: hidden;
-                  background:
-                    radial-gradient(circle, rgba(255, 255, 255, 0.5) 0.4px, transparent 0.4px) repeat 0 0 / 8px 8px,
-                    radial-gradient(circle, rgba(255, 255, 255, 0.5) 0.7px, transparent 0.7px) repeat 0 8% / 14px 14px,
-                    radial-gradient(circle, rgba(255, 255, 255, 0.55) 1.1px, transparent 1.1px) repeat 0 20% / 22px 22px,
-                    radial-gradient(circle, rgba(255, 255, 255, 0.6) 1.6px, transparent 1.6px) repeat 0 36% / 32px 32px,
-                    radial-gradient(circle, rgba(255, 255, 255, 0.65) 2.2px, transparent 2.2px) repeat 0 55% / 44px 44px,
-                    radial-gradient(circle, rgba(255, 255, 255, 0.7) 3px, transparent 3px) repeat 0 78% / 58px 58px;
-                  mask-image: linear-gradient(
-                    to bottom,
-                    transparent 5%,
-                    rgba(0, 0, 0, 0.25) 15%,
-                    rgba(0, 0, 0, 0.6) 35%,
-                    black 60%,
-                    black 100%
-                  );
-                  -webkit-mask-image: linear-gradient(
-                    to bottom,
-                    transparent 5%,
-                    rgba(0, 0, 0, 0.25) 15%,
-                    rgba(0, 0, 0, 0.6) 35%,
-                    black 60%,
-                    black 100%
-                  );
-                }
-
                 // Inner content container
                 .card-content {
-                  position: relative;
+                  position: absolute;
                   z-index: 3;
                   padding: 18px 20px;
-                  display: flex;
-                  flex-direction: column;
-                  height: 100%;
+                  bottom: 0;
+                  justify-content: flex-start;
+                  display: grid;
+                  grid-template-columns: auto 1fr;
+                }
+
+                .card-icon-frame {
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 36px;
+                  height: 36px;
+                  border-radius: 10px;
+                  background: rgba(255, 255, 255, 0.25);
+                  backdrop-filter: blur(4px);
+                  flex-shrink: 0;
+                  grid-row: 1 / 3;
+                  margin-right: 1em;
+
+                  .card-icon {
+                    font-size: 18px;
+                    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+                  }
+                }
+
+                .card-title {
+                  margin-bottom: 2px;
+
+                  div {
+                    padding: 1px 4px;
+                    color: #fff;
+                    font-size: 14px;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    border-radius: 6px;
+                    backdrop-filter: blur(4px);
+                    -webkit-backdrop-filter: blur(4px);
+                    text-shadow:
+                      0 1px 6px rgba(0, 0, 0, 0.2),
+                      0 0 8px rgba(var(--card-rgb), 0.5);
+                    display: inline-block;
+                  }
+                }
+
+                .card-subtitle {
+                  font-size: 9px;
+                  color: rgba(255, 255, 255, 0.6);
+                  letter-spacing: 0.5px;
+                  text-transform: uppercase;
+                  padding: 1px 4px;
+                  border-radius: 2px;
+                  backdrop-filter: blur(4px);
+                  -webkit-backdrop-filter: blur(4px);
+                  text-shadow: 0 0 6px rgba(var(--card-rgb), 0.4);
+                }
+
+                .halftone-container {
+                  position: absolute;
+                  inset: -7%;
                 }
 
                 // ── Card Shine ──
@@ -821,133 +868,67 @@ $card-radius: 16px;
               }
             }
 
-            // ── SMALL CARDS ──
-            &.col-small .card-item {
-              flex: 1;
-              min-height: 0;
-
-              .card-content {
-                padding: 14px 18px;
-                justify-content: flex-start;
-                padding-bottom: 40px;
-              }
-
-              .card-icon-frame {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 36px;
-                height: 36px;
-                border-radius: 10px;
-                background: rgba(255, 255, 255, 0.25);
-                backdrop-filter: blur(4px);
-                margin-bottom: 6px;
-                flex-shrink: 0;
-
-                .card-icon {
-                  font-size: 18px;
-                  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-                }
-              }
-
-              .card-title {
-                font-size: 14px;
-                font-weight: 700;
-                letter-spacing: 0.5px;
-                margin-bottom: 2px;
-                color: #fff;
-                text-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
-              }
-
-              .card-subtitle {
-                font-size: 9px;
-                color: rgba(255, 255, 255, 0.6);
-                letter-spacing: 0.5px;
-                text-transform: uppercase;
-              }
-            }
-
             // ── LARGE CARD (洛洛希雅) ──
             &.col-large .card-item {
               height: 100%;
+              flex: none;
 
               .card-content {
+                display: grid;
+                grid-template-columns: auto 1fr;
                 align-items: center;
-                justify-content: center;
-                text-align: center;
-                gap: 6px;
-                padding: 28px 22px 50px;
+                gap: 4px 12px;
+                padding: 20px 22px;
               }
 
               .card-avatar {
-                margin-bottom: 10px;
+                grid-row: 1 / 3;
+                grid-column: 1;
+                align-self: center;
 
-                .avatar-ring {
-                  width: 68px;
-                  height: 68px;
+                .avatar-img {
+                  width: 56px;
+                  height: 56px;
                   border-radius: 50%;
-                  background: rgba(255, 255, 255, 0.18);
-                  backdrop-filter: blur(8px);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  border: 2px solid rgba(255, 255, 255, 0.25);
-                  box-shadow: 0 0 30px rgba($primary, 0.25);
-                  transition: all 0.4s ease;
-
-                  .avatar-icon {
-                    font-size: 28px;
-                    filter: drop-shadow(0 0 8px rgba($primary, 0.3));
-                  }
+                  object-fit: cover;
+                  border: 2px solid rgba(255, 255, 255, 0.3);
+                  box-shadow: 0 0 20px rgba($primary, 0.3);
+                  display: block;
                 }
               }
 
               .card-title {
-                font-size: 24px;
+                grid-row: 1;
+                grid-column: 2;
+                font-size: 15px;
                 font-weight: 800;
-                letter-spacing: 3px;
+                letter-spacing: 1px;
                 color: #fff;
-                text-shadow: 0 2px 5px rgba(0, 0, 0, 0.75);
-              }
-
-              .card-subtitle {
-                font-size: 11px;
-                color: rgba(255, 255, 255, 0.55);
-                letter-spacing: 2px;
-                text-transform: uppercase;
-                margin-bottom: 2px;
-                text-shadow: 0 2px 5px rgba(0, 0, 0, 0.75);
+                padding: 2px 8px;
+                border-radius: 4px;
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                text-shadow:
+                  0 2px 5px rgba(0, 0, 0, 0.75),
+                  0 0 12px rgba(var(--card-rgb), 0.6);
+                margin: 0;
               }
 
               .card-description {
-                font-size: 12px;
+                grid-row: 2;
+                grid-column: 2;
+                font-size: 11px;
                 color: rgba(255, 255, 255, 0.45);
                 line-height: 1.5;
-                max-width: 220px;
                 font-weight: 300;
-                text-shadow: 0 2px 5px rgba(0, 0, 0, 0.75);
-              }
-
-              .card-cta {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                margin-top: 14px;
-                padding: 7px 22px;
-                border-radius: 20px;
-                background: rgba(255, 255, 255, 0.12);
-                backdrop-filter: blur(4px);
-                border: 1px solid rgba(255, 255, 255, 0.18);
-                font-size: 12px;
-                font-weight: 500;
-                letter-spacing: 1px;
-                transition: all 0.3s ease;
-                color: rgba(255, 255, 255, 0.85);
-
-                .cta-arrow {
-                  transition: all 0.3s ease;
-                  opacity: 0.5;
-                }
+                padding: 2px 8px;
+                border-radius: 4px;
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                text-shadow:
+                  0 2px 5px rgba(0, 0, 0, 0.75),
+                  0 0 8px rgba(var(--card-rgb), 0.5);
+                margin: 0;
               }
             }
           }
