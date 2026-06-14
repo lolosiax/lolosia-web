@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getRoot } from '@/utils/request'
+import { setTransitionOrigin } from '@/utils/transition'
 import HalftoneCanvas from './components/HalftoneCanvas.vue'
 
 const router = useRouter()
@@ -97,7 +98,8 @@ watch(hoveringImage, (it) => {
 const leftCards = computed(() => cards.slice(0, 3))
 const rightCard = computed(() => cards[3])
 
-function handleCardClick(card: CardItem) {
+function handleCardClick(card: CardItem, event: MouseEvent) {
+  setTransitionOrigin(event.clientX, event.clientY)
   if (card.path) {
     router.push(card.path)
   } else if (card.external) {
@@ -279,7 +281,7 @@ onUnmounted(() => {
                 v-for="card in leftCards"
                 :key="card.id"
                 class="card-item"
-                @click="handleCardClick(card)"
+                @click="handleCardClick(card, $event)"
                 @mouseenter="hoveringImage = card.hoverImage || card.bgImage"
                 @mouseleave="hoveringImage = undefined"
                 :style="{ '--card-rgb': card.themeRgb }"
@@ -326,7 +328,7 @@ onUnmounted(() => {
             <div class="grid-col col-large">
               <div
                 class="card-item card-large"
-                @click="handleCardClick(rightCard)"
+                @click="handleCardClick(rightCard, $event)"
                 @mouseenter="hoveringImage = rightCard.hoverImage || rightCard.bgImage"
                 @mouseleave="hoveringImage = undefined"
                 :style="{ '--card-rgb': rightCard.themeRgb }"
@@ -511,7 +513,7 @@ $card-radius: 16px;
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
               background-clip: text;
-              padding: 5px;
+              padding-bottom: 5px;
 
               &::after {
                 content: '';
@@ -523,11 +525,6 @@ $card-radius: 16px;
                 background: linear-gradient(90deg, $primary, transparent);
                 border-radius: 2px;
                 opacity: 0.35;
-              }
-
-              &::before {
-                top: 5px;
-                left: 5px;
               }
             }
           }
