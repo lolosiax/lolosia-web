@@ -237,11 +237,11 @@ onUnmounted(() => {
           </div>
 
           <h1 class="main-title">
-            <span class="title-line">想去</span>
-            <span class="title-line accent">哪里？</span>
+            <span class="title-line title-line-0" data-text="欢迎你">欢迎你</span>
+            <span class="title-line title-line-1 accent" data-text="来自现实的旅人">来自现实的旅人</span>
           </h1>
 
-          <p class="subtitle-text">选择你的目的地，开启一段旅程</p>
+          <p class="subtitle-text">你想要去往何方？</p>
 
           <div class="divider">
             <span class="divider-icon">◇</span>
@@ -490,10 +490,20 @@ $card-radius: 16px;
           font-weight: 800;
           line-height: 1.1;
           margin: 0 0 14px;
+          isolation: isolate;
 
           .title-line {
             display: block;
             color: $text-dark;
+            position: relative;
+
+            &::before {
+              content: attr(data-text);
+              position: absolute;
+              z-index: -1;
+              -webkit-text-stroke: 4px white;
+              -webkit-text-fill-color: transparent;
+            }
 
             &.accent {
               font-size: 72px;
@@ -501,7 +511,7 @@ $card-radius: 16px;
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
               background-clip: text;
-              position: relative;
+              padding: 5px;
 
               &::after {
                 content: '';
@@ -513,6 +523,11 @@ $card-radius: 16px;
                 background: linear-gradient(90deg, $primary, transparent);
                 border-radius: 2px;
                 opacity: 0.35;
+              }
+
+              &::before {
+                top: 5px;
+                left: 5px;
               }
             }
           }
