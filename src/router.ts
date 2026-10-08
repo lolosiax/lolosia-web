@@ -2,6 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { catchAllRoute, createAppRouter, errorRoutes, layoutRoute } from '@/core/router'
 import { registerRouteComponents } from '@/core/router/component-registry'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
+import { filesRoutes } from '@/modules/files/routes'
 import { profileRoute, systemRoutes } from '@/modules/system/routes'
 
 /**
@@ -14,6 +15,7 @@ import { profileRoute, systemRoutes } from '@/modules/system/routes'
 /** 后端菜单如果下发 component 字符串，按这张表解析；未登记会直接报错。 */
 registerRouteComponents({
   'dashboard/index': () => import('@/modules/dashboard/pages/DashboardPage.vue'),
+  'files/index': () => import('@/modules/files/pages/FilesPage.vue'),
   'system/user': () => import('@/modules/system/pages/UserPage.vue'),
   'system/role': () => import('@/modules/system/pages/RolePage.vue'),
   'system/menu': () => import('@/modules/system/pages/MenuPage.vue'),
@@ -21,7 +23,12 @@ registerRouteComponents({
 })
 
 /** 布局内的一级菜单（侧栏直接渲染这一层）。 */
-export const menuRoutes: RouteRecordRaw[] = [...dashboardRoutes(), ...systemRoutes(), profileRoute()]
+export const menuRoutes: RouteRecordRaw[] = [
+  ...dashboardRoutes(),
+  ...systemRoutes(),
+  ...filesRoutes(),
+  profileRoute()
+]
 
 const routes: RouteRecordRaw[] = [
   {

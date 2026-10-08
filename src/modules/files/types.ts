@@ -1,0 +1,35 @@
+import type { FileEntry, FileSortKey, FileSortOrder, MediaTagRef } from './api'
+
+/** 带缓存版本号的条目：SSE 重签后自增，驱动缩略图换源。 */
+export interface UiEntry extends FileEntry {
+  thumbToken?: number
+}
+
+export type FileView = 'grid' | 'list'
+export type FileGroup = 'none' | 'year' | 'month' | 'favorite'
+export type NsfwMode = 'blur' | 'always'
+
+export interface EntryGroup {
+  key: string
+  label: string
+  entries: UiEntry[]
+}
+
+export interface GroupTag extends MediaTagRef {
+  count: number
+}
+
+export interface TagRow extends GroupTag {
+  key: string
+  negative?: boolean
+  title: string
+}
+
+export interface FilesPrefs {
+  view: FileView
+  sort: FileSortKey
+  order: FileSortOrder
+  previewOpen: boolean
+  nsfwMode: NsfwMode
+  group: FileGroup
+}
