@@ -5,6 +5,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPage from '@/core/ui/AppPage.vue'
+import { analyzeMediaIndex, isViewable, scanMediaIndex } from '../api'
 import type { FileSortKey } from '../api'
 import { useFilesListing } from '../composables/use-files-listing'
 import { useFilesPrefs } from '../composables/use-files-prefs'
@@ -14,8 +15,10 @@ import { useFilesStore } from '../store'
 import type { UiEntry } from '../types'
 import FileGrid from '../components/FileGrid.vue'
 import FilePreview from '../components/FilePreview.vue'
+import FileSettingDialog from '../components/FileSettingDialog.vue'
 import FileToolbar from '../components/FileToolbar.vue'
 import FileTree from '../components/FileTree.vue'
+import MediaViewer from '../components/MediaViewer.vue'
 
 defineOptions({ name: 'Files' })
 
@@ -37,6 +40,9 @@ const {
 } = useFilesPreview()
 
 const dragging = ref(false)
+const settingOpen = ref(false)
+/** 全屏查看器里打开的项（空串 = 未打开）。 */
+const viewerPath = ref('')
 
 /** 当前目录的相对路径；URL 是唯一来源。 */
 const currentPath = computed(() => {
@@ -65,6 +71,7 @@ function navigate(path: string): void {
 async function reload(): Promise<void> {
   clear()
   clearPreview()
+  viewerPath.value = ''
   await load(currentPath.value, prefs.sort, prefs.order)
 }
 
@@ -94,10 +101,35 @@ function handlePick(entry: UiEntry, mode: 'single' | 'toggle' | 'range'): void {
   onPick(entry, mode)
 }
 
-/** 双击：目录进目录，文件先选中（查看器在下一节点接入）。 */
+/** 双击：目录进目录；图片 / 视频打开全屏查看器；其余文件当选中处理。 */
 function open(entry: UiEntry): void {
   if (entry.directory) navigate(entry.path)
+  else if (isViewable(entry)) viewerPath.value = entry.path
   else onPick(entry, 'single')
+}
+
+function onViewerVisible(value: boolean): void {
+  if (!value) viewerPath.value = ''
+}
+
+/** 工具栏「刷新索引」：只做本地扫描（EXIF / 规则打标），不出网。 */
+async function onIndexScan(): Promise<void> {
+  try {
+    const result = await scanMediaIndex(currentPath.value)
+    ElMessage.success(result.message)
+  } catch (err) {
+    ElMessage.error(err instanceof Error ? err.message : '索引扫描失败')
+  }
+}
+
+/** 工具栏「开始打标」：对当前目录递归做外发分析。 */
+async function onAnalyze(): Promise<void> {
+  try {
+    const result = await analyzeMediaIndex(currentPath.value, true, false)
+    ElMessage.success(result.message)
+  } catch (err) {
+    ElMessage.error(err instanceof Error ? err.message : '打标请求失败')
+  }
 }
 
 function onSort(key: FileSortKey): void {
@@ -158,7 +190,10 @@ async function saveRemark(value: string): Promise<void> {
         @update:order="prefs.order = $event"
         @update:preview-open="prefs.previewOpen = $event"
         @update:nsfw-mode="prefs.nsfwMode = $event"
+        @index-scan="onIndexScan"
+        @analyze="onAnalyze"
         @refresh="reload"
+        @setting="settingOpen = true"
       />
 
       <div
@@ -221,6 +256,19 @@ async function saveRemark(value: string): Promise<void> {
         </aside>
       </div>
     </div>
+
+    <FileSettingDialog v-model="settingOpen" />
+
+    <MediaViewer
+      :model-value="Boolean(viewerPath)"
+      :path="viewerPath"
+      :entries="entries"
+      :nsfw-mode="prefs.nsfwMode"
+      :revealed-paths="revealed"
+      @update:model-value="onViewerVisible"
+      @update:path="viewerPath = $event"
+      @reveal="reveal"
+    />
   </AppPage>
 </template>
 
