@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import type { FileSortKey, FileSortOrder } from '../api'
 import type { NsfwMode, UiEntry } from '../types'
+import { useFilesDrag } from '../composables/use-files-drag'
 import { useFilesMarquee } from '../composables/use-files-marquee'
 import FileListRow from './FileListRow.vue'
 import FileTile from './FileTile.vue'
@@ -27,8 +28,10 @@ const emit = defineEmits<{
   marquee: [paths: string[], additive: boolean]
   open: [entry: UiEntry]
   sort: [key: FileSortKey]
-  menu: [entry: UiEntry, event: MouseEvent]
+  menu: [entry: UiEntry, x: number, y: number]
   'menu-blank': [event: MouseEvent]
+  'drop-files': [files: File[], dir: string]
+  'move-into': [paths: string[], dir: string]
 }>()
 
 const gridRef = ref<HTMLElement>()
@@ -36,6 +39,14 @@ const gridRef = ref<HTMLElement>()
 const { marquee, onPointerDown, consumeJustEnded } = useFilesMarquee({
   root: () => gridRef.value,
   onMarquee: (paths, additive) => emit('marquee', paths, additive)
+})
+
+const drag = useFilesDrag({
+  entries: () => props.entries,
+  selection: () => props.selection,
+  currentPath: () => props.path,
+  onDropFiles: (files, dir) => emit('drop-files', files, dir),
+  onMoveInto: (paths, dir) => emit('move-into', paths, dir)
 })
 
 const COLUMNS: { key: FileSortKey; label: string; width?: string }[] = [
@@ -52,15 +63,20 @@ function pick(entry: UiEntry, event: MouseEvent | KeyboardEvent): void {
   emit('pick', entry, mode)
 }
 
+function onPointerDownBoth(event: PointerEvent): void {
+  drag.onItemPointerDown(event)
+  onPointerDown(event)
+}
+
 function gridClick(event: MouseEvent): void {
-  if (consumeJustEnded()) return
+  if (consumeJustEnded() || drag.consumeJustEnded()) return
   if ((event.target as HTMLElement | null)?.closest('.file-tile, .file-row')) return
   emit('pick-blank')
 }
 
 function contextMenu(entry: UiEntry, event: MouseEvent): void {
   event.preventDefault()
-  emit('menu', entry, event)
+  emit('menu', entry, event.clientX, event.clientY)
 }
 
 function blankMenu(event: MouseEvent): void {
@@ -74,11 +90,14 @@ function blankMenu(event: MouseEvent): void {
   <div
     ref="gridRef"
     class="file-grid"
-    :class="`file-grid--${view}`"
+    :class="[`file-grid--${view}`, { 'is-dropping': drag.dropBox.value }]"
     @contextmenu="blankMenu"
     @click="gridClick"
-    @pointerdown="onPointerDown"
+    @pointerdown="onPointerDownBoth"
     @dragstart.prevent
+    @dragover="drag.onDragOver"
+    @dragleave="drag.onDragLeave"
+    @drop="drag.onDrop"
   >
     <div v-if="loading" class="file-grid__overlay">
       <i class="bi bi-arrow-repeat spinning" />
@@ -98,6 +117,7 @@ function blankMenu(event: MouseEvent): void {
         :entry="entry"
         :selected="selection.has(entry.path)"
         :primary="selected === entry.path"
+        :drop-target="drag.dropDir.value === entry.path"
         :nsfw-mode="nsfwMode"
         :revealed="Boolean(revealedPaths[entry.path])"
         @pick="pick"
@@ -131,6 +151,7 @@ function blankMenu(event: MouseEvent): void {
         :entry="entry"
         :selected="selection.has(entry.path)"
         :primary="selected === entry.path"
+        :drop-target="drag.dropDir.value === entry.path"
         :nsfw-mode="nsfwMode"
         :revealed="Boolean(revealedPaths[entry.path])"
         @pick="pick"
@@ -138,6 +159,22 @@ function blankMenu(event: MouseEvent): void {
         @menu="contextMenu"
       />
     </template>
+
+    <div v-if="drag.dropBox.value" class="file-grid__drop-hint">
+      <i class="bi bi-cloud-arrow-up" />
+      <span>松开即上传到当前目录</span>
+    </div>
+
+    <Teleport to="body">
+      <div
+        v-if="drag.dragGhost.value"
+        class="file-grid__drag-ghost"
+        :style="{ left: `${drag.dragGhost.value.x}px`, top: `${drag.dragGhost.value.y}px` }"
+      >
+        <i class="bi bi-arrows-move" />
+        {{ drag.dragGhost.value.label }}
+      </div>
+    </Teleport>
 
     <div
       v-if="marquee"
@@ -163,6 +200,48 @@ function blankMenu(event: MouseEvent): void {
 
   :deep(img) {
     -webkit-user-drag: none;
+  }
+
+  &.is-dropping {
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 2px var(--lolosia-color-primary-light-3, #c296cd);
+  }
+
+  &__drop-hint {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 4px 14px rgba(31, 38, 135, 0.18);
+    color: var(--lolosia-color-primary-dark-2, #7c74a8);
+    font-size: 12px;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  &__drag-ghost {
+    position: fixed;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 240px;
+    padding: 5px 12px;
+    overflow: hidden;
+    border: 1px solid var(--lolosia-color-primary-light-3, #c296cd);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 6px 18px rgba(31, 38, 135, 0.22);
+    color: var(--lolosia-color-primary-dark-2, #7c74a8);
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
   }
 
   &__overlay,

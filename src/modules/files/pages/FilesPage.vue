@@ -5,20 +5,36 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPage from '@/core/ui/AppPage.vue'
-import { analyzeMediaIndex, isViewable, scanMediaIndex } from '../api'
+import { confirmAction } from '@/core/composables/use-dialog'
+import {
+  analyzeMediaIndex,
+  attachMediaTags,
+  detachMediaTags,
+  isNoCrop,
+  isViewable,
+  NO_CROP_TAG,
+  regenerateThumbs,
+  scanMediaIndex
+} from '../api'
 import type { FileSortKey } from '../api'
+import { mapLimit, parentPath, renamedCurrentPath } from '../lib'
+import { useFilesActions } from '../composables/use-files-actions'
 import { useFilesListing } from '../composables/use-files-listing'
 import { useFilesPrefs } from '../composables/use-files-prefs'
 import { useFilesPreview } from '../composables/use-files-preview'
 import { useFilesSelection } from '../composables/use-files-selection'
+import { useFilesShortcuts } from '../composables/use-files-shortcuts'
 import { useFilesStore } from '../store'
 import type { UiEntry } from '../types'
+import EntryMenu from '../components/EntryMenu.vue'
 import FileGrid from '../components/FileGrid.vue'
 import FilePreview from '../components/FilePreview.vue'
 import FileSettingDialog from '../components/FileSettingDialog.vue'
 import FileToolbar from '../components/FileToolbar.vue'
 import FileTree from '../components/FileTree.vue'
+import FileUploadPanel from '../components/FileUploadPanel.vue'
 import MediaViewer from '../components/MediaViewer.vue'
+import NameDialog from '../components/NameDialog.vue'
 
 defineOptions({ name: 'Files' })
 
@@ -28,7 +44,7 @@ const store = useFilesStore()
 const prefs = useFilesPrefs()
 
 const { entries, loading, error, load } = useFilesListing()
-const { selected, selection, selectedEntries, revealed, onPick, applyMarquee, clear, reveal, isRevealed } =
+const { selected, selection, selectedEntries, revealed, onPick, selectAll, applyMarquee, clear, reveal, isRevealed } =
   useFilesSelection(() => entries.value)
 const {
   detail: previewDetail,
@@ -43,6 +59,20 @@ const dragging = ref(false)
 const settingOpen = ref(false)
 /** 全屏查看器里打开的项（空串 = 未打开）。 */
 const viewerPath = ref('')
+const treeRef = ref<{ invalidate: (path: string) => Promise<void> } | null>(null)
+
+/* ---------- 右键菜单 ---------- */
+const menuPos = ref<{ x: number; y: number } | null>(null)
+const menuEntry = ref<UiEntry | null>(null)
+
+/* ---------- 命名对话框（改名 / 新建共用） ---------- */
+const nameOpen = ref(false)
+const nameMode = ref<'rename' | 'mkdir'>('rename')
+const nameEntry = ref<UiEntry | null>(null)
+const nameDir = ref('')
+const nameBusy = ref(false)
+
+const uploads = computed(() => store.uploads)
 
 /** 当前目录的相对路径；URL 是唯一来源。 */
 const currentPath = computed(() => {
@@ -58,14 +88,51 @@ const current = computed<UiEntry | null>(() => {
   return entries.value.find(entry => entry.path === path) ?? selected.value
 })
 
-const sideOpen = computed(() => prefs.previewOpen)
+const sideOpen = computed(() => prefs.previewOpen || uploads.value.length > 0)
 const selectedCount = computed(() => selection.value.size)
 const remarkDisabled = computed(() => !current.value || (!current.value.directory && !current.value.indexed))
+
+/** 菜单作用于右键的那一项；目录树里的节点不在当前列表时只操作它自己。 */
+const menuTargets = computed<UiEntry[]>(() => {
+  const entry = menuEntry.value
+  if (entry && !entries.value.some(item => item.path === entry.path)) return [entry]
+  return selectedEntries.value
+})
+
+const menuSingle = computed(() => menuTargets.value.length <= 1)
+const menuHasFiles = computed(() => menuTargets.value.some(item => !item.directory))
+const menuAllNoCrop = computed(() => {
+  const files = menuTargets.value.filter(item => !item.directory)
+  return files.length > 0 && files.every(isNoCrop)
+})
+
+const nameTitle = computed(() => {
+  if (nameMode.value === 'mkdir') return '新建文件夹'
+  return nameEntry.value?.directory ? '重命名文件夹' : '重命名文件'
+})
+
+const nameInitial = computed(() => (nameMode.value === 'rename' ? nameEntry.value?.name ?? '' : '新建文件夹'))
 
 function navigate(path: string): void {
   const target = path ? `/files/${path}` : '/files'
   if (target === route.path) return
   void router.push(target)
+}
+
+const actions = useFilesActions({
+  changed: dirs => void handleChanged(dirs),
+  renamed: (from, to) => {
+    const next = renamedCurrentPath(currentPath.value, from, to)
+    if (next !== currentPath.value) navigate(next)
+  }
+})
+
+/** 目录内容变更：让目录树对应层失效；当前目录受影响时重列。 */
+async function handleChanged(dirs: string[]): Promise<void> {
+  const unique = [...new Set(dirs)]
+  for (const dir of unique) await treeRef.value?.invalidate(dir)
+  const affected = unique.some(dir => currentPath.value === dir || currentPath.value.startsWith(`${dir}/`))
+  if (affected) await reload()
 }
 
 async function reload(): Promise<void> {
@@ -124,13 +191,201 @@ async function onIndexScan(): Promise<void> {
 
 /** 工具栏「开始打标」：对当前目录递归做外发分析。 */
 async function onAnalyze(): Promise<void> {
+  await runAnalyze(currentPath.value)
+}
+
+async function runAnalyze(path: string, reanalyze = false): Promise<void> {
   try {
-    const result = await analyzeMediaIndex(currentPath.value, true, false)
+    const result = await analyzeMediaIndex(path, true, reanalyze)
     ElMessage.success(result.message)
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : '打标请求失败')
   }
 }
+
+/* ---------- 右键菜单 ---------- */
+
+function menuAt(entry: UiEntry | null, x: number, y: number): void {
+  menuEntry.value = entry
+  menuPos.value = {
+    x: Math.min(x, window.innerWidth - 152),
+    y: Math.min(y, window.innerHeight - 320)
+  }
+}
+
+function openContextMenu(entry: UiEntry, x: number, y: number): void {
+  const inListing = entries.value.some(item => item.path === entry.path)
+  if (inListing && !selection.value.has(entry.path)) onPick(entry, 'single')
+  menuAt(entry, x, y)
+}
+
+function openBlankMenu(event: MouseEvent): void {
+  menuAt(null, event.clientX, event.clientY)
+}
+
+function closeMenu(): void {
+  menuPos.value = null
+  menuEntry.value = null
+}
+
+function startRename(): void {
+  const entry = menuEntry.value
+  closeMenu()
+  if (!entry) return
+  nameMode.value = 'rename'
+  nameEntry.value = entry
+  nameOpen.value = true
+}
+
+function startMkdir(): void {
+  closeMenu()
+  nameMode.value = 'mkdir'
+  nameEntry.value = null
+  nameDir.value = currentPath.value
+  nameOpen.value = true
+}
+
+async function submitName(value: string): Promise<void> {
+  if (nameMode.value === 'rename' && value === nameEntry.value?.name) {
+    nameOpen.value = false
+    return
+  }
+  nameBusy.value = true
+  try {
+    const ok =
+      nameMode.value === 'rename' && nameEntry.value
+        ? await actions.rename(nameEntry.value.path, value)
+        : await actions.mkdir(nameDir.value, value)
+    if (ok) nameOpen.value = false
+  } finally {
+    nameBusy.value = false
+  }
+}
+
+function copySelection(cut: boolean): void {
+  const targets = menuTargets.value
+  closeMenu()
+  if (!targets.length) return
+  actions.clipboard(cut ? 'cut' : 'copy', targets.map(item => item.path))
+}
+
+async function pasteClipboard(): Promise<void> {
+  closeMenu()
+  await actions.paste(currentPath.value)
+}
+
+async function removeSelection(): Promise<void> {
+  const targets = menuTargets.value
+  closeMenu()
+  if (!targets.length) return
+  // 删掉的目录可能正是当前所在目录：先算好退路，删完再一次性导航
+  const removedDir = targets.find(
+    item => item.directory && (currentPath.value === item.path || currentPath.value.startsWith(`${item.path}/`))
+  )
+  const fallback = removedDir ? parentPath(removedDir.path) : null
+  const ok = await actions.remove(targets.map(item => item.path))
+  if (ok && fallback !== null) navigate(fallback)
+}
+
+async function moveIntoDir(paths: string[], dir: string): Promise<void> {
+  if (!paths.length) return
+  const label = dir ? `/${dir}` : '根目录'
+  if (!(await confirmAction(`要移动 ${paths.length} 项到${label}吗？`, '确认移动'))) return
+  await actions.moveInto(paths, dir)
+}
+
+function analyzeEntry(): void {
+  const entry = menuEntry.value
+  closeMenu()
+  if (entry) void runAnalyze(entry.path)
+}
+
+async function reanalyzeEntry(): Promise<void> {
+  const entry = menuEntry.value
+  closeMenu()
+  if (!entry) return
+  const confirmed = await confirmAction(
+    `将对「${entry.name}」及其子目录的全部素材重新外发打标（含已分析项），素材会交给外部大模型并产生费用。`,
+    '重新打标（全部）'
+  )
+  if (confirmed) await runAnalyze(entry.path, true)
+}
+
+async function regenerateSelectedThumbs(): Promise<void> {
+  const paths = menuTargets.value.filter(item => !item.directory).map(item => item.path)
+  closeMenu()
+  if (!paths.length) {
+    ElMessage.warning('请选择图片文件')
+    return
+  }
+  try {
+    const result = await regenerateThumbs(paths)
+    ElMessage.success(result.message || `已重新排队 ${paths.length} 个文件`)
+  } catch (err) {
+    ElMessage.error(err instanceof Error ? err.message : '重新生成缩略图失败')
+  }
+}
+
+/** 批量切换「不裁剪」；变更后重算涉及图片的缩略图。 */
+async function toggleNoCropOnSelection(): Promise<void> {
+  const files = menuTargets.value.filter(item => !item.directory)
+  const enabled = files.length > 0 && files.every(isNoCrop)
+  closeMenu()
+  if (!files.length) {
+    ElMessage.warning('「不裁剪」只对图片文件有效')
+    return
+  }
+  let failed = 0
+  await mapLimit(files, 6, async entry => {
+    if (!entry.indexed) {
+      failed += 1
+      return
+    }
+    const tags = [{ ...NO_CROP_TAG }]
+    try {
+      if (enabled) await detachMediaTags({ path: entry.path, tags })
+      else await attachMediaTags({ path: entry.path, tags })
+    } catch {
+      failed += 1
+    }
+  })
+  if (failed) ElMessage.error(`${failed} 项处理失败`)
+  const paths = files.filter(item => item.indexed).map(item => item.path)
+  if (paths.length) await regenerateThumbs(paths).catch(() => undefined)
+  if (!failed) ElMessage.success(enabled ? '已取消不裁剪' : '已标记不裁剪')
+}
+
+/* ---------- 上传 / 拖拽 ---------- */
+
+async function onDropFiles(files: File[], dir: string): Promise<void> {
+  await store.enqueue(dir, files)
+  await treeRef.value?.invalidate(dir)
+  if (dir === currentPath.value) await reload()
+  const group = store.uploads.find(item => item.dir === dir)
+  const failed = group?.items.filter(item => item.status === 'error').length ?? 0
+  if (failed) ElMessage.error(`${failed} 个文件上传失败，详情见右侧上传面板`)
+}
+
+/* ---------- 快捷键 ---------- */
+
+function hotkeysEnabled(): boolean {
+  return !nameOpen.value && !settingOpen.value && !viewerPath.value && !menuPos.value
+}
+
+function copyHotkey(cut: boolean): void {
+  const targets = selectedEntries.value
+  if (!targets.length) return
+  actions.clipboard(cut ? 'cut' : 'copy', targets.map(item => item.path))
+}
+
+useFilesShortcuts({
+  enabled: hotkeysEnabled,
+  copy: () => copyHotkey(false),
+  cut: () => copyHotkey(true),
+  paste: () => void pasteClipboard(),
+  selectAll: () => selectAll(),
+  remove: () => void removeSelection()
+})
 
 function onSort(key: FileSortKey): void {
   if (prefs.sort === key) prefs.order = prefs.order === 'asc' ? 'desc' : 'asc'
@@ -203,8 +458,10 @@ async function saveRemark(value: string): Promise<void> {
       >
         <aside class="files-page__panel files-page__tree">
           <FileTree
+            ref="treeRef"
             :current="currentPath"
             @navigate="navigate"
+            @menu="openContextMenu"
           />
         </aside>
 
@@ -236,11 +493,16 @@ async function saveRemark(value: string): Promise<void> {
             @marquee="applyMarquee"
             @open="open"
             @sort="onSort"
+            @menu="openContextMenu"
+            @menu-blank="openBlankMenu"
+            @drop-files="onDropFiles"
+            @move-into="moveIntoDir"
           />
         </section>
 
         <aside v-if="sideOpen" class="files-page__side">
           <FilePreview
+            v-if="prefs.previewOpen"
             class="files-page__panel files-page__preview"
             :entry="current"
             :detail="previewDetail"
@@ -253,9 +515,47 @@ async function saveRemark(value: string): Promise<void> {
             @reveal="selected && reveal(selected.path)"
             @save-remark="saveRemark"
           />
+          <FileUploadPanel
+            v-if="uploads.length"
+            class="files-page__panel files-page__upload"
+            :groups="uploads"
+            @clear="store.clearFinished()"
+            @remove="store.removeGroup($event)"
+          />
         </aside>
       </div>
     </div>
+
+    <EntryMenu
+      :open="Boolean(menuPos)"
+      :x="menuPos?.x ?? 0"
+      :y="menuPos?.y ?? 0"
+      :entry="menuEntry"
+      :single="menuSingle"
+      :has-files="menuHasFiles"
+      :all-no-crop="menuAllNoCrop"
+      :can-paste="Boolean(store.clipboard)"
+      @close="closeMenu"
+      @rename="startRename"
+      @folder-tags="closeMenu"
+      @analyze="analyzeEntry"
+      @reanalyze="reanalyzeEntry"
+      @no-crop="toggleNoCropOnSelection"
+      @regenerate="regenerateSelectedThumbs"
+      @copy="copySelection(false)"
+      @cut="copySelection(true)"
+      @remove="removeSelection"
+      @mkdir="startMkdir"
+      @paste="pasteClipboard"
+    />
+
+    <NameDialog
+      v-model="nameOpen"
+      :title="nameTitle"
+      :initial="nameInitial"
+      :busy="nameBusy"
+      @confirm="submitName"
+    />
 
     <FileSettingDialog v-model="settingOpen" />
 
@@ -374,6 +674,12 @@ async function saveRemark(value: string): Promise<void> {
 
   &__preview {
     flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  &__upload {
+    flex: 0 1 auto;
+    max-height: 45%;
     min-height: 0;
   }
 }

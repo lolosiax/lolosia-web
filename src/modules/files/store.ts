@@ -39,6 +39,7 @@ export const useFilesStore = defineStore(
     const uploads = ref<UploadGroup[]>([])
 
     const running = new Set<UploadGroup>()
+    const completions = new Map<UploadGroup, Promise<void>>()
     const dismissTimers = new Map<UploadGroup, number>()
 
     function setTreeWidth(width: number): void {
@@ -88,8 +89,8 @@ export const useFilesStore = defineStore(
       scheduleDismiss(group)
     }
 
-    /** 同目录串行、不同目录并行的上传队列。 */
-    function enqueue(dir: string, files: File[]): void {
+    /** 同目录串行、不同目录并行；返回本组全部传完（含后续追加）的 Promise。 */
+    async function enqueue(dir: string, files: File[]): Promise<void> {
       if (!files.length) return
 
       let group = uploads.value.find(item => item.dir === dir)
@@ -102,7 +103,18 @@ export const useFilesStore = defineStore(
       for (const file of files) {
         group.items.push({ name: file.name, size: file.size, loaded: 0, status: 'pending', file })
       }
-      void runGroup(group)
+      await startGroup(group)
+    }
+
+    /** 组已在跑时复用同一个 Promise；新追加的项会被现有循环继续消费。 */
+    function startGroup(group: UploadGroup): Promise<void> {
+      const existing = completions.get(group)
+      if (existing) return existing
+      const task = runGroup(group).finally(() => {
+        completions.delete(group)
+      })
+      completions.set(group, task)
+      return task
     }
 
     function removeGroup(dir: string): void {

@@ -10,6 +10,7 @@ const props = defineProps<{
   entry: UiEntry
   selected: boolean
   primary: boolean
+  dropTarget?: boolean
   nsfwMode: NsfwMode
   revealed: boolean
 }>()
@@ -28,7 +29,7 @@ const type = computed(() => typeLabel(props.entry))
 <template>
   <div
     class="file-row"
-    :class="{ 'is-selected': selected, 'is-primary': primary }"
+    :class="{ 'is-selected': selected, 'is-primary': primary, 'is-drop-target': dropTarget }"
     :data-drop-dir="entry.directory ? entry.path : undefined"
     :data-entry-path="entry.path"
     role="button"
@@ -77,6 +78,11 @@ const type = computed(() => typeLabel(props.entry))
 
   &.is-primary {
     box-shadow: inset 2px 0 0 var(--lolosia-color-primary-light-3, #c296cd);
+  }
+
+  &.is-drop-target {
+    background: rgba(194, 150, 205, 0.3);
+    box-shadow: inset 0 0 0 2px var(--lolosia-color-primary-light-3, #c296cd);
   }
 
   .cell {

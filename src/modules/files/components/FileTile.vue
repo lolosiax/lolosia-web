@@ -8,6 +8,7 @@ defineProps<{
   entry: UiEntry
   selected: boolean
   primary: boolean
+  dropTarget?: boolean
   nsfwMode: NsfwMode
   revealed: boolean
 }>()
@@ -22,7 +23,7 @@ const emit = defineEmits<{
 <template>
   <div
     class="file-tile"
-    :class="{ 'is-selected': selected, 'is-primary': primary }"
+    :class="{ 'is-selected': selected, 'is-primary': primary, 'is-drop-target': dropTarget }"
     :data-drop-dir="entry.directory ? entry.path : undefined"
     :data-entry-path="entry.path"
     :title="entry.name"
@@ -66,6 +67,11 @@ const emit = defineEmits<{
   }
 
   &.is-primary {
+    box-shadow: inset 0 0 0 2px var(--lolosia-color-primary-light-3, #c296cd);
+  }
+
+  &.is-drop-target {
+    background: rgba(194, 150, 205, 0.3);
     box-shadow: inset 0 0 0 2px var(--lolosia-color-primary-light-3, #c296cd);
   }
 
