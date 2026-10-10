@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { FileSortKey, FileSortOrder } from '../api'
-import type { NsfwMode, UiEntry } from '../types'
+import type { NsfwMode, EntryGroup, UiEntry } from '../types'
 import { useFilesDrag } from '../composables/use-files-drag'
 import { useFilesMarquee } from '../composables/use-files-marquee'
 import FileListRow from './FileListRow.vue'
@@ -11,6 +11,8 @@ defineOptions({ name: 'FileGrid' })
 
 const props = defineProps<{
   entries: UiEntry[]
+  /** 分组渲染批次；`null` = 不分组，直接平铺 entries（entries 已按显示顺序摊平）。 */
+  groups: EntryGroup[] | null
   view: 'grid' | 'list'
   sort: FileSortKey
   order: FileSortOrder
@@ -32,6 +34,7 @@ const emit = defineEmits<{
   'menu-blank': [event: MouseEvent]
   'drop-files': [files: File[], dir: string]
   'move-into': [paths: string[], dir: string]
+  favorite: [entry: UiEntry]
 }>()
 
 const gridRef = ref<HTMLElement>()
@@ -57,6 +60,24 @@ const COLUMNS: { key: FileSortKey; label: string; width?: string }[] = [
 ]
 
 const rowCount = computed(() => props.entries.length)
+
+type Cell =
+  | { kind: 'head'; key: string; label: string; count: number }
+  | { kind: 'entry'; key: string; entry: UiEntry }
+
+/** 把分组拍平成一串渲染单元；不分组时就是 entries 本身。 */
+const cells = computed<Cell[]>(() => {
+  const groups = props.groups
+  if (!groups || !groups.length) {
+    return props.entries.map(entry => ({ kind: 'entry' as const, key: entry.path, entry }))
+  }
+  const out: Cell[] = []
+  for (const group of groups) {
+    out.push({ kind: 'head', key: `head:${group.key}`, label: group.label, count: group.entries.length })
+    for (const entry of group.entries) out.push({ kind: 'entry', key: entry.path, entry })
+  }
+  return out
+})
 
 function pick(entry: UiEntry, event: MouseEvent | KeyboardEvent): void {
   const mode = event.shiftKey ? 'range' : event.ctrlKey || event.metaKey ? 'toggle' : 'single'
@@ -111,19 +132,25 @@ function blankMenu(event: MouseEvent): void {
     </div>
 
     <template v-else-if="view === 'grid'">
-      <FileTile
-        v-for="entry in entries"
-        :key="entry.path"
-        :entry="entry"
-        :selected="selection.has(entry.path)"
-        :primary="selected === entry.path"
-        :drop-target="drag.dropDir.value === entry.path"
-        :nsfw-mode="nsfwMode"
-        :revealed="Boolean(revealedPaths[entry.path])"
-        @pick="pick"
-        @open="emit('open', $event)"
-        @menu="contextMenu"
-      />
+      <template v-for="cell in cells" :key="cell.key">
+        <div v-if="cell.kind === 'head'" class="file-grid__group-head">
+          <span>{{ cell.label }}</span>
+          <span class="file-grid__group-count">{{ cell.count }} 项</span>
+        </div>
+        <FileTile
+          v-else
+          :entry="cell.entry"
+          :selected="selection.has(cell.entry.path)"
+          :primary="selected === cell.entry.path"
+          :drop-target="drag.dropDir.value === cell.entry.path"
+          :nsfw-mode="nsfwMode"
+          :revealed="Boolean(revealedPaths[cell.entry.path])"
+          @pick="pick"
+          @open="emit('open', $event)"
+          @menu="contextMenu"
+          @favorite="emit('favorite', $event)"
+        />
+      </template>
     </template>
 
     <template v-else>
@@ -145,19 +172,25 @@ function blankMenu(event: MouseEvent): void {
           />
         </span>
       </div>
-      <FileListRow
-        v-for="entry in entries"
-        :key="entry.path"
-        :entry="entry"
-        :selected="selection.has(entry.path)"
-        :primary="selected === entry.path"
-        :drop-target="drag.dropDir.value === entry.path"
-        :nsfw-mode="nsfwMode"
-        :revealed="Boolean(revealedPaths[entry.path])"
-        @pick="pick"
-        @open="emit('open', $event)"
-        @menu="contextMenu"
-      />
+      <template v-for="cell in cells" :key="cell.key">
+        <div v-if="cell.kind === 'head'" class="file-grid__group-head">
+          <span>{{ cell.label }}</span>
+          <span class="file-grid__group-count">{{ cell.count }} 项</span>
+        </div>
+        <FileListRow
+          v-else
+          :entry="cell.entry"
+          :selected="selection.has(cell.entry.path)"
+          :primary="selected === cell.entry.path"
+          :drop-target="drag.dropDir.value === cell.entry.path"
+          :nsfw-mode="nsfwMode"
+          :revealed="Boolean(revealedPaths[cell.entry.path])"
+          @pick="pick"
+          @open="emit('open', $event)"
+          @menu="contextMenu"
+          @favorite="emit('favorite', $event)"
+        />
+      </template>
     </template>
 
     <div v-if="drag.dropBox.value" class="file-grid__drop-hint">
@@ -242,6 +275,26 @@ function blankMenu(event: MouseEvent): void {
     white-space: nowrap;
     text-overflow: ellipsis;
     pointer-events: none;
+  }
+
+  &__group-head {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 6px 0 2px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: rgba(194, 150, 205, 0.16);
+    color: var(--lolosia-color-primary-dark-2, #7c74a8);
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  &__group-count {
+    font-weight: 400;
+    opacity: 0.75;
   }
 
   &__overlay,

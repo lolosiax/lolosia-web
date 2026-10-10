@@ -5,36 +5,37 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPage from '@/core/ui/AppPage.vue'
-import { confirmAction } from '@/core/composables/use-dialog'
-import {
-  analyzeMediaIndex,
-  attachMediaTags,
-  detachMediaTags,
-  isNoCrop,
-  isViewable,
-  NO_CROP_TAG,
-  regenerateThumbs,
-  scanMediaIndex
-} from '../api'
+import { isViewable } from '../api'
 import type { FileSortKey } from '../api'
-import { mapLimit, parentPath, renamedCurrentPath } from '../lib'
+import { renamedCurrentPath } from '../lib'
 import { useFilesActions } from '../composables/use-files-actions'
+import { useFilesClipboard } from '../composables/use-files-clipboard'
+import { useFilesGroups } from '../composables/use-files-groups'
 import { useFilesListing } from '../composables/use-files-listing'
+import { useFilesMedia } from '../composables/use-files-media'
+import { useFilesMenu } from '../composables/use-files-menu'
 import { useFilesPrefs } from '../composables/use-files-prefs'
 import { useFilesPreview } from '../composables/use-files-preview'
+import { useFilesRealtime } from '../composables/use-files-realtime'
 import { useFilesSelection } from '../composables/use-files-selection'
 import { useFilesShortcuts } from '../composables/use-files-shortcuts'
+import { useFilesTagPanel } from '../composables/use-files-tag-panel'
+import { useFilesTags } from '../composables/use-files-tags'
 import { useFilesStore } from '../store'
 import type { UiEntry } from '../types'
 import EntryMenu from '../components/EntryMenu.vue'
 import FileGrid from '../components/FileGrid.vue'
 import FilePreview from '../components/FilePreview.vue'
+import FilePropertyDialog from '../components/FilePropertyDialog.vue'
 import FileSettingDialog from '../components/FileSettingDialog.vue'
 import FileToolbar from '../components/FileToolbar.vue'
 import FileTree from '../components/FileTree.vue'
 import FileUploadPanel from '../components/FileUploadPanel.vue'
+import FolderTagDialog from '../components/FolderTagDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import NameDialog from '../components/NameDialog.vue'
+import TagMenu from '../components/TagMenu.vue'
+import TagPanel from '../components/TagPanel.vue'
 
 defineOptions({ name: 'Files' })
 
@@ -43,11 +44,12 @@ const router = useRouter()
 const store = useFilesStore()
 const prefs = useFilesPrefs()
 
-const { entries, loading, error, load } = useFilesListing()
-const { selected, selection, selectedEntries, revealed, onPick, selectAll, applyMarquee, clear, reveal, isRevealed } =
-  useFilesSelection(() => entries.value)
+const { entries, loading, error, load, patch } = useFilesListing()
 const {
+  path: previewPath,
   detail: previewDetail,
+  media: previewMedia,
+  tagsOfFolder: previewFolderTags,
   remark: previewRemark,
   loading: previewLoading,
   load: loadPreview,
@@ -61,16 +63,10 @@ const settingOpen = ref(false)
 const viewerPath = ref('')
 const treeRef = ref<{ invalidate: (path: string) => Promise<void> } | null>(null)
 
-/* ---------- 右键菜单 ---------- */
-const menuPos = ref<{ x: number; y: number } | null>(null)
-const menuEntry = ref<UiEntry | null>(null)
-
-/* ---------- 命名对话框（改名 / 新建共用） ---------- */
-const nameOpen = ref(false)
-const nameMode = ref<'rename' | 'mkdir'>('rename')
-const nameEntry = ref<UiEntry | null>(null)
-const nameDir = ref('')
-const nameBusy = ref(false)
+/* ---------- 属性 / 文件夹标签对话框 ---------- */
+const propertyOpen = ref(false)
+const folderTagOpen = ref(false)
+const folderTagTarget = ref<UiEntry | null>(null)
 
 const uploads = computed(() => store.uploads)
 
@@ -80,6 +76,14 @@ const currentPath = computed(() => {
   const segments = Array.isArray(raw) ? raw : raw ? [raw as string] : []
   return segments.filter(Boolean).join('/')
 })
+
+const { group, dateGroupEnabled, favFirstEnabled, groupEnabled, displayGroups, displayEntries, loadFolderTags, snapshotFavorites } =
+  useFilesGroups(entries, currentPath)
+
+const { selected, selection, selectedEntries, revealed, onPick, selectAll, applyMarquee, clear, reveal, isRevealed } =
+  useFilesSelection(() => displayEntries.value)
+
+const { groupTags, addTags, removeTag, toggleFavorite } = useFilesTags(selection, selectedEntries)
 
 /** 主选中项按路径从最新列表里取，SSE / 刷新替换数组后仍指向同一条。 */
 const current = computed<UiEntry | null>(() => {
@@ -91,27 +95,6 @@ const current = computed<UiEntry | null>(() => {
 const sideOpen = computed(() => prefs.previewOpen || uploads.value.length > 0)
 const selectedCount = computed(() => selection.value.size)
 const remarkDisabled = computed(() => !current.value || (!current.value.directory && !current.value.indexed))
-
-/** 菜单作用于右键的那一项；目录树里的节点不在当前列表时只操作它自己。 */
-const menuTargets = computed<UiEntry[]>(() => {
-  const entry = menuEntry.value
-  if (entry && !entries.value.some(item => item.path === entry.path)) return [entry]
-  return selectedEntries.value
-})
-
-const menuSingle = computed(() => menuTargets.value.length <= 1)
-const menuHasFiles = computed(() => menuTargets.value.some(item => !item.directory))
-const menuAllNoCrop = computed(() => {
-  const files = menuTargets.value.filter(item => !item.directory)
-  return files.length > 0 && files.every(isNoCrop)
-})
-
-const nameTitle = computed(() => {
-  if (nameMode.value === 'mkdir') return '新建文件夹'
-  return nameEntry.value?.directory ? '重命名文件夹' : '重命名文件'
-})
-
-const nameInitial = computed(() => (nameMode.value === 'rename' ? nameEntry.value?.name ?? '' : '新建文件夹'))
 
 function navigate(path: string): void {
   const target = path ? `/files/${path}` : '/files'
@@ -127,6 +110,36 @@ const actions = useFilesActions({
   }
 })
 
+const {
+  menuPos,
+  menuEntry,
+  menuTargets,
+  menuSingle,
+  menuHasFiles,
+  menuAllNoCrop,
+  nameOpen,
+  nameTitle,
+  nameInitial,
+  nameBusy,
+  openContextMenu,
+  openBlankMenu,
+  closeMenu,
+  startRename,
+  startMkdir,
+  submitName
+} = useFilesMenu({ entries, currentPath, selection, selectedEntries, actions, onPick })
+
+const { copySelection, pasteClipboard, removeSelection, moveIntoDir } = useFilesClipboard({
+  menuTargets,
+  closeMenu,
+  currentPath,
+  actions,
+  navigate
+})
+
+const { onIndexScan, onAnalyze, analyzeEntry, reanalyzeEntry, regenerateSelectedThumbs, toggleNoCropOnSelection } =
+  useFilesMedia({ currentPath, menuEntry, menuTargets, closeMenu })
+
 /** 目录内容变更：让目录树对应层失效；当前目录受影响时重列。 */
 async function handleChanged(dirs: string[]): Promise<void> {
   const unique = [...new Set(dirs)]
@@ -140,7 +153,30 @@ async function reload(): Promise<void> {
   clearPreview()
   viewerPath.value = ''
   await load(currentPath.value, prefs.sort, prefs.order)
+  // 分组与组内「喜欢优先」用的是进目录那一刻的快照，只在重列时重算
+  snapshotFavorites()
 }
+
+/** 标签 / 评级改完后重拉预览，让右侧标签栏与属性数据保持同一份。 */
+function refreshPreview(): Promise<void> {
+  const entry = current.value
+  return entry ? loadPreview(entry) : Promise.resolve()
+}
+
+const { tagRows, tagHint, tagMenuPos, openTagMenu, closeTagMenu, addTagsToSelection, applyTagToAll, removeTagFromAll } =
+  useFilesTagPanel({
+    selectedEntries,
+    selection,
+    groupTags,
+    current,
+    selectedCount,
+    previewPath,
+    previewFolderTags,
+    previewMedia,
+    addTags,
+    removeTag,
+    refreshPreview
+  })
 
 watch(currentPath, () => void reload())
 watch([() => prefs.sort, () => prefs.order], () => void reload())
@@ -158,6 +194,13 @@ watch(
 )
 
 onMounted(() => void reload())
+
+// 缩略图生成完成 / 索引更新：命中主选中项时顺手刷新预览
+useFilesRealtime(patch, path => {
+  if (selected.value?.path !== path) return
+  const entry = entries.value.find(item => item.path === path)
+  if (entry) void loadPreview(entry)
+})
 
 /** 单击已选中的那一项 = 查看（只放行遮罩）；列表视图走右侧预览。 */
 function handlePick(entry: UiEntry, mode: 'single' | 'toggle' | 'range'): void {
@@ -179,180 +222,46 @@ function onViewerVisible(value: boolean): void {
   if (!value) viewerPath.value = ''
 }
 
-/** 工具栏「刷新索引」：只做本地扫描（EXIF / 规则打标），不出网。 */
-async function onIndexScan(): Promise<void> {
-  try {
-    const result = await scanMediaIndex(currentPath.value)
-    ElMessage.success(result.message)
-  } catch (err) {
-    ElMessage.error(err instanceof Error ? err.message : '索引扫描失败')
+/* ---------- 标签 / 喜欢 ---------- */
+
+/** 网格卡片上的心：未索引的文件后端给不出标签关联，先拦一下。 */
+async function onFavorite(entry: UiEntry): Promise<void> {
+  if (!entry.directory && !entry.indexed) {
+    ElMessage.warning('文件尚未索引，暂时不能标心')
+    return
   }
+  await toggleFavorite(entry)
+  if (current.value?.path === entry.path) await refreshPreview()
 }
 
-/** 工具栏「开始打标」：对当前目录递归做外发分析。 */
-async function onAnalyze(): Promise<void> {
-  await runAnalyze(currentPath.value)
+/* ---------- 属性 / 文件夹标签 ---------- */
+
+function openProperty(): void {
+  if (current.value) propertyOpen.value = true
 }
 
-async function runAnalyze(path: string, reanalyze = false): Promise<void> {
-  try {
-    const result = await analyzeMediaIndex(path, true, reanalyze)
-    ElMessage.success(result.message)
-  } catch (err) {
-    ElMessage.error(err instanceof Error ? err.message : '打标请求失败')
-  }
+/** 属性页保存后：重拉当前目录与预览，让评级 / 标签 / 备注一起跟上。 */
+async function onPropertySaved(): Promise<void> {
+  const entry = current.value
+  if (!entry) return
+  await load(currentPath.value, prefs.sort, prefs.order)
+  await loadPreview(entry)
 }
 
-/* ---------- 右键菜单 ---------- */
-
-function menuAt(entry: UiEntry | null, x: number, y: number): void {
-  menuEntry.value = entry
-  menuPos.value = {
-    x: Math.min(x, window.innerWidth - 152),
-    y: Math.min(y, window.innerHeight - 320)
-  }
-}
-
-function openContextMenu(entry: UiEntry, x: number, y: number): void {
-  const inListing = entries.value.some(item => item.path === entry.path)
-  if (inListing && !selection.value.has(entry.path)) onPick(entry, 'single')
-  menuAt(entry, x, y)
-}
-
-function openBlankMenu(event: MouseEvent): void {
-  menuAt(null, event.clientX, event.clientY)
-}
-
-function closeMenu(): void {
-  menuPos.value = null
-  menuEntry.value = null
-}
-
-function startRename(): void {
+function openFolderTags(): void {
   const entry = menuEntry.value
   closeMenu()
   if (!entry) return
-  nameMode.value = 'rename'
-  nameEntry.value = entry
-  nameOpen.value = true
+  folderTagTarget.value = entry
+  folderTagOpen.value = true
 }
 
-function startMkdir(): void {
-  closeMenu()
-  nameMode.value = 'mkdir'
-  nameEntry.value = null
-  nameDir.value = currentPath.value
-  nameOpen.value = true
-}
-
-async function submitName(value: string): Promise<void> {
-  if (nameMode.value === 'rename' && value === nameEntry.value?.name) {
-    nameOpen.value = false
-    return
-  }
-  nameBusy.value = true
-  try {
-    const ok =
-      nameMode.value === 'rename' && nameEntry.value
-        ? await actions.rename(nameEntry.value.path, value)
-        : await actions.mkdir(nameDir.value, value)
-    if (ok) nameOpen.value = false
-  } finally {
-    nameBusy.value = false
-  }
-}
-
-function copySelection(cut: boolean): void {
-  const targets = menuTargets.value
-  closeMenu()
-  if (!targets.length) return
-  actions.clipboard(cut ? 'cut' : 'copy', targets.map(item => item.path))
-}
-
-async function pasteClipboard(): Promise<void> {
-  closeMenu()
-  await actions.paste(currentPath.value)
-}
-
-async function removeSelection(): Promise<void> {
-  const targets = menuTargets.value
-  closeMenu()
-  if (!targets.length) return
-  // 删掉的目录可能正是当前所在目录：先算好退路，删完再一次性导航
-  const removedDir = targets.find(
-    item => item.directory && (currentPath.value === item.path || currentPath.value.startsWith(`${item.path}/`))
-  )
-  const fallback = removedDir ? parentPath(removedDir.path) : null
-  const ok = await actions.remove(targets.map(item => item.path))
-  if (ok && fallback !== null) navigate(fallback)
-}
-
-async function moveIntoDir(paths: string[], dir: string): Promise<void> {
-  if (!paths.length) return
-  const label = dir ? `/${dir}` : '根目录'
-  if (!(await confirmAction(`要移动 ${paths.length} 项到${label}吗？`, '确认移动'))) return
-  await actions.moveInto(paths, dir)
-}
-
-function analyzeEntry(): void {
-  const entry = menuEntry.value
-  closeMenu()
-  if (entry) void runAnalyze(entry.path)
-}
-
-async function reanalyzeEntry(): Promise<void> {
-  const entry = menuEntry.value
-  closeMenu()
-  if (!entry) return
-  const confirmed = await confirmAction(
-    `将对「${entry.name}」及其子目录的全部素材重新外发打标（含已分析项），素材会交给外部大模型并产生费用。`,
-    '重新打标（全部）'
-  )
-  if (confirmed) await runAnalyze(entry.path, true)
-}
-
-async function regenerateSelectedThumbs(): Promise<void> {
-  const paths = menuTargets.value.filter(item => !item.directory).map(item => item.path)
-  closeMenu()
-  if (!paths.length) {
-    ElMessage.warning('请选择图片文件')
-    return
-  }
-  try {
-    const result = await regenerateThumbs(paths)
-    ElMessage.success(result.message || `已重新排队 ${paths.length} 个文件`)
-  } catch (err) {
-    ElMessage.error(err instanceof Error ? err.message : '重新生成缩略图失败')
-  }
-}
-
-/** 批量切换「不裁剪」；变更后重算涉及图片的缩略图。 */
-async function toggleNoCropOnSelection(): Promise<void> {
-  const files = menuTargets.value.filter(item => !item.directory)
-  const enabled = files.length > 0 && files.every(isNoCrop)
-  closeMenu()
-  if (!files.length) {
-    ElMessage.warning('「不裁剪」只对图片文件有效')
-    return
-  }
-  let failed = 0
-  await mapLimit(files, 6, async entry => {
-    if (!entry.indexed) {
-      failed += 1
-      return
-    }
-    const tags = [{ ...NO_CROP_TAG }]
-    try {
-      if (enabled) await detachMediaTags({ path: entry.path, tags })
-      else await attachMediaTags({ path: entry.path, tags })
-    } catch {
-      failed += 1
-    }
-  })
-  if (failed) ElMessage.error(`${failed} 项处理失败`)
-  const paths = files.filter(item => item.indexed).map(item => item.path)
-  if (paths.length) await regenerateThumbs(paths).catch(() => undefined)
-  if (!failed) ElMessage.success(enabled ? '已取消不裁剪' : '已标记不裁剪')
+/** 改的正是当前所在目录时，分组栏与默认模式要立刻跟着变（改子目录则等进去时再生效）。 */
+async function onFolderTagsSaved(): Promise<void> {
+  const target = folderTagTarget.value
+  if (!target) return
+  if (target.path === currentPath.value) await loadFolderTags()
+  if (current.value?.path === target.path) await refreshPreview()
 }
 
 /* ---------- 上传 / 拖拽 ---------- */
@@ -369,7 +278,15 @@ async function onDropFiles(files: File[], dir: string): Promise<void> {
 /* ---------- 快捷键 ---------- */
 
 function hotkeysEnabled(): boolean {
-  return !nameOpen.value && !settingOpen.value && !viewerPath.value && !menuPos.value
+  return (
+    !nameOpen.value &&
+    !settingOpen.value &&
+    !viewerPath.value &&
+    !menuPos.value &&
+    !tagMenuPos.value &&
+    !propertyOpen.value &&
+    !folderTagOpen.value
+  )
 }
 
 function copyHotkey(cut: boolean): void {
@@ -430,10 +347,10 @@ async function saveRemark(value: string): Promise<void> {
         :view="prefs.view"
         :sort="prefs.sort"
         :order="prefs.order"
-        :group="'none'"
-        :group-enabled="false"
-        :date-group-enabled="false"
-        :fav-first-enabled="false"
+        :group="group"
+        :group-enabled="groupEnabled"
+        :date-group-enabled="dateGroupEnabled"
+        :fav-first-enabled="favFirstEnabled"
         :preview-open="prefs.previewOpen"
         :total="entries.length"
         :selected-count="selectedCount"
@@ -443,6 +360,7 @@ async function saveRemark(value: string): Promise<void> {
         @update:view="prefs.view = $event"
         @update:sort="prefs.sort = $event"
         @update:order="prefs.order = $event"
+        @update:group="group = $event"
         @update:preview-open="prefs.previewOpen = $event"
         @update:nsfw-mode="prefs.nsfwMode = $event"
         @index-scan="onIndexScan"
@@ -478,7 +396,8 @@ async function saveRemark(value: string): Promise<void> {
         <section class="files-page__panel files-page__grid">
           <div v-if="error" class="files-page__error">{{ error }}</div>
           <FileGrid
-            :entries="entries"
+            :entries="displayEntries"
+            :groups="displayGroups"
             :view="prefs.view"
             :sort="prefs.sort"
             :order="prefs.order"
@@ -497,6 +416,7 @@ async function saveRemark(value: string): Promise<void> {
             @menu-blank="openBlankMenu"
             @drop-files="onDropFiles"
             @move-into="moveIntoDir"
+            @favorite="onFavorite"
           />
         </section>
 
@@ -512,8 +432,19 @@ async function saveRemark(value: string): Promise<void> {
             :revealed="Boolean(selected && isRevealed(selected.path))"
             :remark="previewRemark"
             :remark-disabled="remarkDisabled"
+            @property="openProperty"
             @reveal="selected && reveal(selected.path)"
             @save-remark="saveRemark"
+          />
+          <TagPanel
+            v-if="prefs.previewOpen"
+            class="files-page__panel files-page__tags"
+            :rows="tagRows"
+            :can-tag="selectedEntries.length > 0"
+            :hint="tagHint"
+            :path="currentPath"
+            @add="addTagsToSelection"
+            @menu="openTagMenu"
           />
           <FileUploadPanel
             v-if="uploads.length"
@@ -537,7 +468,7 @@ async function saveRemark(value: string): Promise<void> {
       :can-paste="Boolean(store.clipboard)"
       @close="closeMenu"
       @rename="startRename"
-      @folder-tags="closeMenu"
+      @folder-tags="openFolderTags"
       @analyze="analyzeEntry"
       @reanalyze="reanalyzeEntry"
       @no-crop="toggleNoCropOnSelection"
@@ -547,6 +478,24 @@ async function saveRemark(value: string): Promise<void> {
       @remove="removeSelection"
       @mkdir="startMkdir"
       @paste="pasteClipboard"
+    />
+
+    <FilePropertyDialog v-model="propertyOpen" :path="current?.path ?? ''" @saved="onPropertySaved" />
+
+    <FolderTagDialog
+      v-model="folderTagOpen"
+      :path="folderTagTarget?.path ?? ''"
+      :name="folderTagTarget?.name ?? ''"
+      @saved="onFolderTagsSaved"
+    />
+
+    <TagMenu
+      :open="Boolean(tagMenuPos)"
+      :x="tagMenuPos?.x ?? 0"
+      :y="tagMenuPos?.y ?? 0"
+      @apply="applyTagToAll"
+      @remove="removeTagFromAll"
+      @close="closeTagMenu"
     />
 
     <NameDialog
@@ -674,6 +623,12 @@ async function saveRemark(value: string): Promise<void> {
 
   &__preview {
     flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  &__tags {
+    flex: 0 0 auto;
+    max-height: 38%;
     min-height: 0;
   }
 

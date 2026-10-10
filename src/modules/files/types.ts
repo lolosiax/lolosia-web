@@ -19,8 +19,10 @@ export interface GroupTag extends MediaTagRef {
   count: number
 }
 
-export interface TagRow extends GroupTag {
+export interface TagRow extends MediaTagRef {
   key: string
+  /** 多选聚合时给出的项数；单选没有这个值。 */
+  count?: number
   negative?: boolean
   title: string
 }
@@ -31,5 +33,4 @@ export interface FilesPrefs {
   order: FileSortOrder
   previewOpen: boolean
   nsfwMode: NsfwMode
-  group: FileGroup
 }

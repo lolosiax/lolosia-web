@@ -8,8 +8,7 @@ const DEFAULT_PREFS: FilesPrefs = {
   sort: 'name',
   order: 'asc',
   previewOpen: true,
-  nsfwMode: 'blur',
-  group: 'none'
+  nsfwMode: 'blur'
 }
 
 function loadPrefs(): FilesPrefs {

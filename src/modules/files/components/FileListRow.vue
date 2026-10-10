@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { isFavorite } from '../api'
 import { formatDateTime, formatSize, typeLabel } from '../lib'
 import type { NsfwMode, UiEntry } from '../types'
 import FileThumb from './FileThumb.vue'
@@ -19,11 +20,25 @@ const emit = defineEmits<{
   pick: [entry: UiEntry, event: MouseEvent]
   open: [entry: UiEntry]
   menu: [entry: UiEntry, event: MouseEvent]
+  favorite: [entry: UiEntry]
 }>()
 
 const date = computed(() => formatDateTime(props.entry.mtime))
 const size = computed(() => (props.entry.directory ? '—' : formatSize(props.entry.size)))
 const type = computed(() => typeLabel(props.entry))
+
+const favoriteSupported = computed(
+  () => props.entry.directory || /^(image|video|audio)\//.test(props.entry.mime)
+)
+const favoritePending = computed(() => !props.entry.directory && !props.entry.indexed)
+const favoriteTitle = computed(() => {
+  if (favoritePending.value) return '文件尚未索引'
+  return isFavorite(props.entry) ? '取消喜欢' : '标记喜欢'
+})
+
+function onFavorite(): void {
+  if (!favoritePending.value) emit('favorite', props.entry)
+}
 </script>
 
 <template>
@@ -54,6 +69,21 @@ const type = computed(() => typeLabel(props.entry))
     <span class="file-row__date cell">{{ date }}</span>
     <span class="file-row__type cell">{{ type }}</span>
     <span class="file-row__size cell">{{ size }}</span>
+    <span class="cell fav">
+      <button
+        v-if="favoriteSupported"
+        type="button"
+        class="file-row__fav"
+        :class="{ 'is-on': isFavorite(entry), 'is-pending': favoritePending }"
+        :title="favoriteTitle"
+        :aria-label="favoriteTitle"
+        @pointerdown.stop
+        @click.stop="onFavorite"
+      >
+        <i v-if="favoritePending" class="bi bi-three-dots" />
+        <i v-else class="bi" :class="isFavorite(entry) ? 'bi-heart-fill' : 'bi-heart'" />
+      </button>
+    </span>
   </div>
 </template>
 
@@ -116,6 +146,45 @@ const type = computed(() => typeLabel(props.entry))
 
   &__size {
     width: 110px;
+  }
+
+  .fav {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+  }
+
+  &__fav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--el-text-color-secondary, #999);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease;
+
+    &.is-on {
+      opacity: 1;
+      color: #e0526a;
+    }
+
+    &.is-pending {
+      opacity: 1;
+      cursor: default;
+    }
+  }
+
+  &:hover &__fav {
+    opacity: 1;
   }
 }
 </style>

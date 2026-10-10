@@ -12,6 +12,8 @@ import type { UiEntry } from '../types'
 
 /** 右侧预览：单文件详情、媒体信息、目录标签与备注。 */
 export function useFilesPreview() {
+  /** 当前预览对应的路径；异步数据回来时用它认领，免得把上一项的结果画到新选中项上。 */
+  const path = ref('')
   const detail = ref<FileDetail | null>(null)
   const media = ref<MediaDetail | null>(null)
   const tagsOfFolder = ref<MediaTagItem[]>([])
@@ -25,6 +27,7 @@ export function useFilesPreview() {
   })
 
   async function load(entry: UiEntry): Promise<void> {
+    path.value = entry.path
     detail.value = null
     media.value = null
     tagsOfFolder.value = []
@@ -36,6 +39,7 @@ export function useFilesPreview() {
           folderTags(entry.path).catch(() => []),
           folderRemark(entry.path).catch(() => ({ path: entry.path, remark: '' }))
         ])
+        if (path.value !== entry.path) return
         tagsOfFolder.value = tags
         remarkOfFolder.value = mark.remark
         return
@@ -45,10 +49,11 @@ export function useFilesPreview() {
         fileDetail(entry.path).catch(() => null),
         mediaDetail(entry.path).catch(() => null)
       ])
+      if (path.value !== entry.path) return
       detail.value = file
       media.value = info
     } finally {
-      loading.value = false
+      if (path.value === entry.path) loading.value = false
     }
   }
 
@@ -59,11 +64,12 @@ export function useFilesPreview() {
   }
 
   function clear(): void {
+    path.value = ''
     detail.value = null
     media.value = null
     tagsOfFolder.value = []
     remarkOfFolder.value = ''
   }
 
-  return { detail, media, tagsOfFolder, remark, loading, load, saveRemark, clear }
+  return { path, detail, media, tagsOfFolder, remark, loading, load, saveRemark, clear }
 }

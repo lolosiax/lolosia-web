@@ -131,19 +131,50 @@ export function renamedCurrentPath(current: string, from: string, to: string): s
   return `${to}${current.slice(from.length)}`
 }
 
-/** 按年份 / 月份 / 喜欢分组；`favorite` 组只放标心项。 */
-export function buildGroups(entries: UiEntry[], group: FileGroup, favorited: (entry: UiEntry) => boolean): EntryGroup[] | null {
+/** 从名字里抠 yyyyMMdd（第一段合法日期），拿不到返回 null。 */
+function dateOfName(name: string): { year: number; month: number } | null {
+  const match = name.match(/((?:19|20)\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])/)
+  if (!match) return null
+  return { year: Number(match[1]), month: Number(match[2]) }
+}
+
+const UNKNOWN_GROUP = '__unknown__'
+const FAVORITE_GROUP = '__favorite__'
+const OTHER_GROUP = '__other__'
+
+/**
+ * 按年份 / 月份 / 喜欢分组。
+ *
+ * 日期取自名字里的 `yyyyMMdd`（拍摄目录的命名习惯），解析不到的收在末尾「未知」。
+ * `favFirst` 为真时，日期分组内部把已标心的稳定排到前面；`favorited` 读的是进目录时的快照。
+ */
+export function buildGroups(
+  entries: UiEntry[],
+  group: FileGroup,
+  favorited: (entry: UiEntry) => boolean,
+  favFirst: boolean
+): EntryGroup[] | null {
   if (group === 'none') return null
 
   if (group === 'favorite') {
-    return [{ key: 'fav', label: '喜欢', entries: entries.filter(favorited) }]
+    const liked: UiEntry[] = []
+    const rest: UiEntry[] = []
+    for (const entry of entries) (favorited(entry) ? liked : rest).push(entry)
+    const groups: EntryGroup[] = []
+    if (liked.length) groups.push({ key: FAVORITE_GROUP, label: '喜欢', entries: liked })
+    if (rest.length) groups.push({ key: OTHER_GROUP, label: '其他', entries: rest })
+    return groups.length ? groups : null
   }
 
   const buckets = new Map<string, EntryGroup>()
+  const unknown: UiEntry[] = []
   for (const entry of entries) {
-    const date = entry.mtime ? new Date(entry.mtime) : null
-    const year = date ? String(date.getFullYear()) : '未知时间'
-    const key = group === 'year' ? year : date ? `${year}-${pad(date.getMonth() + 1)}` : '未知时间'
+    const date = dateOfName(entry.name)
+    if (!date) {
+      unknown.push(entry)
+      continue
+    }
+    const key = group === 'year' ? String(date.year) : `${date.year}-${pad(date.month)}`
     let bucket = buckets.get(key)
     if (!bucket) {
       bucket = { key, label: key, entries: [] }
@@ -152,7 +183,17 @@ export function buildGroups(entries: UiEntry[], group: FileGroup, favorited: (en
     bucket.entries.push(entry)
   }
 
-  return [...buckets.values()].sort((a, b) => b.key.localeCompare(a.key))
+  const ordered = [...buckets.values()].sort((a, b) => b.key.localeCompare(a.key))
+  if (unknown.length) ordered.push({ key: UNKNOWN_GROUP, label: '未知', entries: unknown })
+
+  if (favFirst) {
+    for (const bucket of ordered) {
+      bucket.entries = [...bucket.entries].sort(
+        (a, b) => Number(favorited(b)) - Number(favorited(a))
+      )
+    }
+  }
+  return ordered
 }
 
 /** 多选条目的标签聚合：同 namespace + name 计数，按次数降序。 */
