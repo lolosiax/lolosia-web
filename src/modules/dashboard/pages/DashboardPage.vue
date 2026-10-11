@@ -1,96 +1,136 @@
 <script setup lang="ts">
+// 仪表盘：只做编排，数据来自四个 composable，展示块都在 components 里。
 import { computed } from 'vue'
 import AppPage from '@/core/ui/AppPage.vue'
-import LiquidBox from '@/core/ui/LiquidBox.vue'
-import MenuIcon from '@/core/ui/MenuIcon.vue'
-import { buildInfo } from '@/core/config/env'
-import { greetingOf } from '@/core/lib/format'
 import { useAuthStore } from '@/core/stores/auth'
+import DashboardBackdrop from '../components/DashboardBackdrop.vue'
+import DashboardHeader from '../components/DashboardHeader.vue'
+import HotTags from '../components/HotTags.vue'
+import MetricsCard from '../components/MetricsCard.vue'
+import RankCard from '../components/RankCard.vue'
+import RecentActiveCard from '../components/RecentActiveCard.vue'
+import RecentAddedCard from '../components/RecentAddedCard.vue'
+import RecommendWall from '../components/RecommendWall.vue'
+import SystemRings from '../components/SystemRings.vue'
+import WatchingWall from '../components/WatchingWall.vue'
+import { useDashboardClock } from '../composables/use-dashboard-clock'
+import { useDashboardMetrics } from '../composables/use-dashboard-metrics'
+import { useDashboardOverview } from '../composables/use-dashboard-overview'
+import { useDashboardStatus } from '../composables/use-dashboard-status'
 
 defineOptions({ name: 'Dashboard' })
 
-const auth = useAuthStore()
-
-const greeting = computed(() => `${greetingOf()}好，${auth.displayName}`)
-const roleLabel = computed(() => auth.role?.roleName ?? auth.roleType ?? '未分配')
-
-const cards = [
-  { icon: 'person-badge', title: '当前角色', key: 'role' as const },
-  { icon: 'git-branch', title: '构建分支', key: 'branch' as const },
-  { icon: 'cpu', title: '前端版本', key: 'version' as const }
+const RANGES = [
+  { key: '30m', label: '30分钟' },
+  { key: '1h', label: '1小时' },
+  { key: '6h', label: '6小时' },
+  { key: '24h', label: '24小时' }
 ]
 
-const cardValues = computed<Record<string, string>>(() => ({
-  role: roleLabel.value,
-  branch: buildInfo.branch || '本地开发',
-  version: buildInfo.frontVersion
-}))
+const auth = useAuthStore()
+const { greeting } = useDashboardClock()
+const name = computed(() => auth.displayName || '朋友')
+
+const { rings, pills, systemAvailable } = useDashboardStatus()
+const { recommended, watching, hotTags, ipRows, originRows, activeFiles, recentFiles } = useDashboardOverview()
+const { activeRange, seriesMap, setRange } = useDashboardMetrics()
 </script>
 
 <template>
   <AppPage>
     <div class="dashboard">
-      <header class="dashboard__header">
-        <h2 class="dashboard__greeting">{{ greeting }}</h2>
-        <p class="dashboard__hint">这里是新前端的骨架页，业务数据将在后续阶段接回来。</p>
-      </header>
+      <DashboardBackdrop />
 
-      <div class="dashboard__cards">
-        <LiquidBox v-for="card in cards" :key="card.key" class="dashboard__card" white>
-          <MenuIcon :icon="card.icon" class="dashboard__card-icon" />
-          <span class="dashboard__card-title">{{ card.title }}</span>
-          <span class="dashboard__card-value">{{ cardValues[card.key] }}</span>
-        </LiquidBox>
-      </div>
+      <DashboardHeader class="dashboard__head" :greeting="greeting" :name="name" :pills="pills" />
+
+      <section class="dashboard__hero">
+        <div class="dashboard__col">
+          <SystemRings :rings="rings" :available="systemAvailable" />
+          <MetricsCard :ranges="RANGES" :range="activeRange" :series-map="seriesMap" @update:range="setRange" />
+        </div>
+        <div class="dashboard__col">
+          <RecommendWall :items="recommended" />
+          <HotTags :tags="hotTags" />
+        </div>
+      </section>
+
+      <section class="dashboard__rest">
+        <RankCard class="dashboard__cell-4" title="访问 IP 排行" icon="bi bi-globe2" :rows="ipRows" />
+        <RankCard class="dashboard__cell-4" title="Origin 排行" icon="bi bi-diagram-3" :rows="originRows" />
+        <WatchingWall class="dashboard__cell-4" :items="watching" />
+        <RecentActiveCard class="dashboard__cell-6" :items="activeFiles" />
+        <RecentAddedCard class="dashboard__cell-6" :items="recentFiles" />
+      </section>
     </div>
   </AppPage>
 </template>
 
 <style scoped lang="scss">
 .dashboard {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 8px;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  padding: 6px 8px 28px;
+  overflow-x: hidden;
+  overflow-y: auto;
 
-  &__greeting {
-    font-size: 22px;
-    font-weight: 600;
-    color: #4a3d4d;
+  &__head,
+  &__hero,
+  &__rest {
+    position: relative;
+    z-index: 1;
   }
 
-  &__hint {
-    margin-top: 6px;
-    color: #7a6a7e;
-  }
-
-  &__cards {
+  &__hero {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+    gap: 12px;
   }
 
-  &__card {
+  &__col {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 12px;
+    min-width: 0;
   }
 
-  &__card-icon {
-    font-size: 22px;
-    color: var(--lolosia-color-primary-dark-2);
+  &__rest {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 12px;
   }
 
-  &__card-title {
-    font-size: 12px;
-    color: #8c7b90;
+  &__cell-4 {
+    grid-column: span 4;
   }
 
-  &__card-value {
-    margin-top: 4px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #4a3d4d;
+  &__cell-6 {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 1100px) {
+  .dashboard {
+    &__hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__cell-4,
+    &__cell-6 {
+      grid-column: span 6;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard {
+    &__cell-4,
+    &__cell-6 {
+      grid-column: span 12;
+    }
   }
 }
 </style>
