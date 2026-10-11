@@ -3,6 +3,7 @@ import { catchAllRoute, createAppRouter, errorRoutes, layoutRoute } from '@/core
 import { registerRouteComponents } from '@/core/router/component-registry'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { filesRoutes } from '@/modules/files/routes'
+import { footprintRoutes } from '@/modules/footprint/routes'
 import { profileRoute, systemRoutes } from '@/modules/system/routes'
 
 /**
@@ -16,6 +17,7 @@ import { profileRoute, systemRoutes } from '@/modules/system/routes'
 registerRouteComponents({
   'dashboard/index': () => import('@/modules/dashboard/pages/DashboardPage.vue'),
   'files/index': () => import('@/modules/files/pages/FilesPage.vue'),
+  'footprint/index': () => import('@/modules/footprint/pages/FootprintPage.vue'),
   'system/user': () => import('@/modules/system/pages/UserPage.vue'),
   'system/role': () => import('@/modules/system/pages/RolePage.vue'),
   'system/menu': () => import('@/modules/system/pages/MenuPage.vue'),
@@ -27,6 +29,7 @@ export const menuRoutes: RouteRecordRaw[] = [
   ...dashboardRoutes(),
   ...systemRoutes(),
   ...filesRoutes(),
+  ...footprintRoutes(),
   profileRoute()
 ]
 
