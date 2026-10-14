@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { catchAllRoute, createAppRouter, errorRoutes, layoutRoute } from '@/core/router'
 import { registerRouteComponents } from '@/core/router/component-registry'
+import { animeRoutes } from '@/modules/anime/routes'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { filesRoutes } from '@/modules/files/routes'
 import { footprintRoutes } from '@/modules/footprint/routes'
@@ -18,6 +19,7 @@ registerRouteComponents({
   'dashboard/index': () => import('@/modules/dashboard/pages/DashboardPage.vue'),
   'files/index': () => import('@/modules/files/pages/FilesPage.vue'),
   'footprint/index': () => import('@/modules/footprint/pages/FootprintPage.vue'),
+  'anime/index': () => import('@/modules/anime/pages/AnimePage.vue'),
   'system/user': () => import('@/modules/system/pages/UserPage.vue'),
   'system/role': () => import('@/modules/system/pages/RolePage.vue'),
   'system/menu': () => import('@/modules/system/pages/MenuPage.vue'),
@@ -30,6 +32,7 @@ export const menuRoutes: RouteRecordRaw[] = [
   ...systemRoutes(),
   ...filesRoutes(),
   ...footprintRoutes(),
+  ...animeRoutes(),
   profileRoute()
 ]
 
