@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
 import MenuIcon from '@/core/ui/MenuIcon.vue'
 import { joinPath } from '@/core/lib/path'
-import NavLink from '../Link.vue'
+import NavLink from '../../shared/Link.vue'
 
 defineOptions({ name: 'SidebarItem' })
 
@@ -58,18 +58,11 @@ const icon = computed(() => onlyChild.value?.meta?.icon ?? props.item.meta?.icon
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
   color: inherit;
 }
 
 .sidebar-item__title {
   font-size: 0.8em;
-  line-height: 1.2;
-}
-
-:deep(.el-sub-menu__title) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  line-height: 1;
 }
 </style>

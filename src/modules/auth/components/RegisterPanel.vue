@@ -80,26 +80,40 @@ onMounted(reloadCaptcha)
 </script>
 
 <template>
-  <ElForm v-if="step === 1" ref="formRef" :model="model" :rules="stepOneRules" label-position="top">
+  <ElForm v-if="step === 1" ref="formRef" class="register-panel" :model="model" :rules="stepOneRules" label-position="top">
+    <p class="register-panel__step">第 1 步 · 验证账户</p>
     <ElFormItem label="用户名" prop="userName">
-      <ElInput v-model="model.userName" placeholder="登录名" autocomplete="username" />
+      <ElInput v-model="model.userName" placeholder="登录名" autocomplete="username">
+        <template #prefix>
+          <i class="bi bi-person" aria-hidden="true" />
+        </template>
+      </ElInput>
     </ElFormItem>
     <ElFormItem label="邮箱" prop="email">
-      <ElInput v-model="model.email" placeholder="用于找回账户" autocomplete="email" />
+      <ElInput v-model="model.email" placeholder="用于找回账户" autocomplete="email">
+        <template #prefix>
+          <i class="bi bi-envelope" aria-hidden="true" />
+        </template>
+      </ElInput>
     </ElFormItem>
     <ElFormItem label="验证码" prop="captchaValue">
       <div class="register-panel__captcha">
-        <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" @click="reloadCaptcha" />
-        <ElInput v-model="model.captchaValue" placeholder="点击图片刷新" @keyup.enter="next" />
+        <ElInput v-model="model.captchaValue" placeholder="输入图中字符" @keyup.enter="next" />
+        <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" title="点击刷新" @click="reloadCaptcha" />
       </div>
     </ElFormItem>
     <ElButton class="register-panel__submit" type="primary" round :loading="loading" @click="next">下一步</ElButton>
   </ElForm>
 
-  <ElForm v-else ref="formRef" :model="model" :rules="stepTwoRules" label-position="top">
+  <ElForm v-else ref="formRef" class="register-panel" :model="model" :rules="stepTwoRules" label-position="top">
+    <p class="register-panel__step">第 2 步 · 设置密码</p>
     <p class="register-panel__hint">邮箱验证暂未启用，直接为 {{ model.userName }} 设置密码即可。</p>
     <ElFormItem label="密码" prop="password">
-      <ElInput v-model="model.password" type="password" show-password autocomplete="new-password" />
+      <ElInput v-model="model.password" type="password" show-password autocomplete="new-password">
+        <template #prefix>
+          <i class="bi bi-lock" aria-hidden="true" />
+        </template>
+      </ElInput>
     </ElFormItem>
     <ElFormItem label="确认密码" prop="confirm">
       <ElInput
@@ -108,42 +122,81 @@ onMounted(reloadCaptcha)
         show-password
         autocomplete="new-password"
         @keyup.enter="submit"
-      />
+      >
+        <template #prefix>
+          <i class="bi bi-shield-lock" aria-hidden="true" />
+        </template>
+      </ElInput>
     </ElFormItem>
-    <ElButton class="register-panel__submit" type="primary" round :loading="loading" @click="submit">注册</ElButton>
+    <ElButton class="register-panel__submit" type="primary" round :loading="loading" @click="submit">完成注册</ElButton>
     <ElButton class="register-panel__back" text @click="step = 1">返回上一步</ElButton>
   </ElForm>
 </template>
 
 <style scoped lang="scss">
 .register-panel {
+  &__step {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 14px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: rgba(194, 150, 205, 0.12);
+    color: #8d6aa0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
   &__captcha {
     display: flex;
     align-items: center;
     gap: 10px;
+    width: 100%;
+
+    :deep(.el-input) {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
 
     img {
-      height: 38px;
-      border-radius: 6px;
+      flex: 0 0 auto;
+      height: 46px;
+      border: 1px solid rgba(164, 128, 171, 0.2);
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(74, 45, 94, 0.06);
       cursor: pointer;
     }
   }
 
   &__hint {
-    margin-bottom: 12px;
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(194, 150, 205, 0.1);
+    color: #7a6a7e;
     font-size: 12px;
-    color: #8c7b90;
     line-height: 1.6;
   }
 
   &__submit {
     width: 100%;
-    margin-top: 4px;
+    margin-top: 0;
   }
 
   &__back {
     width: 100%;
     margin-top: 8px;
+    margin-left: 0;
+    color: #8c7b90;
+    font-size: 12.5px;
+
+    &:hover {
+      color: #a480ab;
+      background: transparent;
+    }
   }
 }
 </style>

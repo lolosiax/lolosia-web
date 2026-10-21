@@ -55,7 +55,5 @@ watch(() => route.name, syncCache, { immediate: true })
   min-height: 0;
   padding: var(--app-main-padding);
   overflow: auto;
-  background-color: var(--app-main-background);
-  border-radius: 16px;
 }
 </style>

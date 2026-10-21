@@ -26,9 +26,13 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <ElForm ref="formRef" :model="model" :rules="rules" label-position="top" @submit.prevent="submit">
+  <ElForm ref="formRef" class="login-panel" :model="model" :rules="rules" label-position="top" @submit.prevent="submit">
     <ElFormItem label="用户名" prop="userName">
-      <ElInput v-model="model.userName" placeholder="用户名或手机号" autocomplete="username" />
+      <ElInput v-model="model.userName" placeholder="用户名或手机号" autocomplete="username">
+        <template #prefix>
+          <i class="bi bi-person" aria-hidden="true" />
+        </template>
+      </ElInput>
     </ElFormItem>
     <ElFormItem label="密码">
       <ElInput
@@ -38,9 +42,13 @@ async function submit(): Promise<void> {
         show-password
         autocomplete="current-password"
         @keyup.enter="submit"
-      />
+      >
+        <template #prefix>
+          <i class="bi bi-lock" aria-hidden="true" />
+        </template>
+      </ElInput>
     </ElFormItem>
-    <ElFormItem>
+    <ElFormItem class="login-panel__options">
       <ElCheckbox v-model="model.keepSession">保持登录</ElCheckbox>
     </ElFormItem>
     <ElButton class="login-panel__submit" type="primary" round :loading="props.loading" native-type="submit">
@@ -50,8 +58,14 @@ async function submit(): Promise<void> {
 </template>
 
 <style scoped lang="scss">
-.login-panel__submit {
-  width: 100%;
-  margin-top: 4px;
+.login-panel {
+  &__options {
+    margin-bottom: 8px;
+  }
+
+  &__submit {
+    width: 100%;
+    margin-top: 0;
+  }
 }
 </style>

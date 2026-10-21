@@ -33,10 +33,10 @@ registerRouteComponents({
 export const menuRoutes: RouteRecordRaw[] = [
   ...siteRoutes(),
   ...dashboardRoutes(),
-  ...systemRoutes(),
   ...filesRoutes(),
   ...footprintRoutes(),
   ...animeRoutes(),
+  ...systemRoutes(),
   profileRoute()
 ]
 

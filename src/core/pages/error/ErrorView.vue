@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import logo from '@/core/icons/common/sidebar-logo.svg?url'
+import logo from '@/core/icons/common/logo.png?url'
 
 defineOptions({ name: 'ErrorView' })
 
@@ -65,6 +65,8 @@ function goBack(): void {
   &__logo {
     width: 64px;
     height: 64px;
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(74, 45, 94, 0.2);
   }
 
   &__code {

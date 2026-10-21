@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw, Router } from 'vue-router'
 import { settings } from '@/core/config/settings'
+import { resolveLayout } from '@/core/layout'
+import type { LayoutName } from '@/core/layout'
 import { installGuards } from './guards'
 
 /** 错误页（布局外，独立占满整页）。 */
@@ -27,12 +29,22 @@ export function errorRoutes(): RouteRecordRaw[] {
   ]
 }
 
+/** 布局壳的路由参数；`layout` 由 {@link resolveLayout} 解析成具体布局。 */
+export interface LayoutRouteOptions {
+  layout?: LayoutName
+  path?: string
+  name?: string
+  redirect?: string
+}
+
 /** 布局壳：`children` 由应用入口塞进来（core 不依赖 modules）。 */
-export function layoutRoute(children: RouteRecordRaw[], redirect?: string): RouteRecordRaw {
+export function layoutRoute(children: RouteRecordRaw[], options: LayoutRouteOptions = {}): RouteRecordRaw {
+  const { layout = 'liquid', path = '/', name = 'Layout', redirect } = options
+
   return {
-    path: '/',
-    name: 'Layout',
-    component: () => import('@/core/layout/LiquidLayout.vue'),
+    path,
+    name,
+    component: resolveLayout(layout),
     redirect,
     children
   }

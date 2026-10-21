@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
-import { useResponsiveSidebar } from '@/core/composables/use-resize'
-import AppMain from './AppMain.vue'
-import AppNavBar from './AppNavBar.vue'
+import AppMain from '../shared/AppMain.vue'
+import AppNavBar from '../shared/AppNavBar.vue'
 import SidebarNav from './Sidebar/SidebarNav.vue'
 
 defineOptions({ name: 'LiquidLayout' })
@@ -11,8 +10,6 @@ defineOptions({ name: 'LiquidLayout' })
 const route = useRoute()
 /** 入口页 / 全屏展示页跳过侧栏与顶栏。 */
 const bare = computed(() => Boolean(route.meta.bare))
-
-useResponsiveSidebar()
 </script>
 
 <template>
@@ -48,7 +45,6 @@ useResponsiveSidebar()
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    padding: 8px 8px 8px 4px;
   }
 }
 </style>

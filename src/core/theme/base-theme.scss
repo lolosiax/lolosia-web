@@ -5,11 +5,18 @@ html.base-theme {
   --lolosia-color-primary-light-5: #dfcde6;
   --lolosia-color-primary-dark-2: #a480ab;
 
+  /* Element Plus 主色跟随品牌色，避免默认蓝色渗进业务界面 */
+  --el-color-primary: #c296cd;
+  --el-color-primary-light-3: #d2b1db;
+  --el-color-primary-light-5: #dfcde6;
+  --el-color-primary-light-7: #ecdff1;
+  --el-color-primary-light-8: #f2e9f6;
+  --el-color-primary-light-9: #faf6fc;
+  --el-color-primary-dark-2: #a480ab;
+
   /* 布局 */
   --nav-bar-height: 50px;
   --app-main-padding: 10px;
-  --app-main-background: rgba(255, 255, 255, 0.86);
-  --side-bar-width: 210px;
 
   /* 进度条 */
   --pregress-bar-color: var(--lolosia-color-primary);

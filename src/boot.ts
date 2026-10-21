@@ -1,4 +1,4 @@
-import logo from '@/core/icons/common/sidebar-logo.svg?url'
+import logo from '@/core/icons/common/logo.png?url'
 import { settings } from '@/core/config/settings'
 import css from '@/core/styles/init.css?url'
 

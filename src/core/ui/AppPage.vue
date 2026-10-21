@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onActivated, onBeforeUnmount, onDeactivated, onMounted, useId, useSlots } from 'vue'
-import type { VNode } from 'vue'
 import { useLayoutStore } from '@/core/stores/layout'
 
 defineOptions({ name: 'AppPage' })
@@ -8,16 +7,22 @@ defineOptions({ name: 'AppPage' })
 const slots = useSlots()
 const layout = useLayoutStore()
 const baseId = useId()
-const empty = (): VNode[] => []
 
 const leftId = `${baseId}-left`
 const centerId = `${baseId}-center`
 const rightId = `${baseId}-right`
 
 function sync(): void {
-  layout.registerNavbar(leftId, 'left', slots.left ?? empty)
-  layout.registerNavbar(centerId, 'center', slots.center ?? empty)
-  layout.registerNavbar(rightId, 'right', slots.right ?? empty)
+  const entries = [
+    { id: leftId, align: 'left' as const, slot: slots.left },
+    { id: centerId, align: 'center' as const, slot: slots.center },
+    { id: rightId, align: 'right' as const, slot: slots.right }
+  ]
+
+  for (const { id, align, slot } of entries) {
+    if (slot) layout.registerNavbar(id, align, slot)
+    else layout.unregisterNavbar(id)
+  }
 }
 
 function clear(): void {
