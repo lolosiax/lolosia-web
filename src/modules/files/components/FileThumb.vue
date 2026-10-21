@@ -76,7 +76,7 @@ watch(
   &__image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     opacity: 0;
     transition: opacity 0.24s ease, filter 0.2s ease;
 

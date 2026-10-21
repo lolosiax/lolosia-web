@@ -114,25 +114,41 @@ function open(card: PortalCard): void {
   .portal {
     flex-direction: column;
     gap: 24px;
-    justify-content: center;
-    padding: 32px 20px 48px;
+    justify-content: flex-start;
+    height: 100vh;
+    height: 100dvh;
+    padding: 32px 20px 40px;
+    overflow-x: hidden;
     overflow-y: auto;
 
     &__intro {
       flex: none;
+      width: 100%;
     }
 
     &__stage {
       flex: none;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       width: 100%;
       height: auto;
-      min-height: 360px;
+      min-height: 0;
+      gap: 12px;
       transform: none;
     }
 
+    &__col {
+      gap: 12px;
+
+      &--large {
+        height: auto;
+      }
+    }
+
     &__copy {
-      left: 20px;
+      position: static;
+      margin-top: auto;
+      padding-top: 8px;
+      text-align: center;
     }
   }
 }

@@ -120,17 +120,43 @@ function goLanding(): void {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .hero-nav {
-    padding: 14px 18px;
+    position: fixed;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+    background: rgba(255, 255, 255, 0.82);
+    border-bottom: 1px solid rgba(210, 177, 219, 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 
     &__links {
+      flex: 1 1 auto;
+      min-width: 0;
       gap: 2px;
+      overflow-x: auto;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
     }
 
     &__link {
+      flex: 0 0 auto;
       padding: 6px 9px;
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    &__actions {
+      flex: 0 0 auto;
+      gap: 6px;
+
+      button {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
     }
   }
 }

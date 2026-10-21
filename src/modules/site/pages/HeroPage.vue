@@ -14,11 +14,11 @@ import SectionPager from '../components/hero/SectionPager.vue'
 defineOptions({ name: 'HeroPage' })
 
 const track = ref<HTMLElement | null>(null)
-const { active, go } = useHeroSections(track)
+const { active, isMobile, go } = useHeroSections(track)
 </script>
 
 <template>
-  <div class="hero">
+  <div class="hero" :class="{ 'is-mobile': isMobile }">
     <HeroBackdrop />
     <HeroNavbar :sections="HERO_SECTIONS" :active="active" @go="go" />
 
@@ -29,7 +29,7 @@ const { active, go } = useHeroSections(track)
       <GameScenesSection class="hero__panel" />
     </div>
 
-    <SectionPager :sections="HERO_SECTIONS" :active="active" @go="go" />
+    <SectionPager v-if="!isMobile" :sections="HERO_SECTIONS" :active="active" @go="go" />
   </div>
 </template>
 
@@ -55,6 +55,31 @@ const { active, go } = useHeroSections(track)
     flex: 0 0 100vw;
     width: 100vw;
     height: 100vh;
+  }
+
+  /* 手机端改为原生纵向滚动，不再做整屏横向位移 */
+  &.is-mobile {
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+
+    .hero__track {
+      position: static;
+      flex-direction: column;
+      width: 100%;
+      height: auto;
+      will-change: auto;
+    }
+
+    .hero__panel {
+      flex: none;
+      width: 100%;
+      height: auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
   }
 }
 </style>

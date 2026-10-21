@@ -136,4 +136,17 @@ const emit = defineEmits<{
     }
   }
 }
+
+@media (max-width: 820px) {
+  .portal-card {
+    flex: none;
+    min-height: 104px;
+    padding: 16px;
+
+    &.is-large {
+      height: auto;
+      min-height: 168px;
+    }
+  }
+}
 </style>

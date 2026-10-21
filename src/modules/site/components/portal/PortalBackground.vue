@@ -47,4 +47,17 @@ usePortalBackground(canvas)
     background: radial-gradient(circle, rgba(223, 205, 230, 0.25), transparent 70%);
   }
 }
+
+/* 移动端内容在入口页内部滚动，背景固定在视口，避免随内容一起滚走或撑大画布 */
+@media (max-width: 820px) {
+  .portal-bg,
+  .portal-blob {
+    position: fixed;
+  }
+
+  .portal-bg {
+    height: 100vh;
+    height: 100dvh;
+  }
+}
 </style>

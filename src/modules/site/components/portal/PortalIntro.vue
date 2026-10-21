@@ -132,4 +132,45 @@ defineProps<{ items: PortalCard[] }>()
     }
   }
 }
+
+@media (max-width: 820px) {
+  .intro {
+    max-width: 100%;
+
+    &__badge {
+      margin-bottom: 18px;
+    }
+
+    &__title {
+      margin-bottom: 10px;
+      font-size: clamp(32px, 8vw, 44px);
+
+      em {
+        font-size: clamp(36px, 9.6vw, 52px);
+      }
+    }
+
+    &__lead {
+      margin-bottom: 18px;
+    }
+
+    &__hints {
+      margin-bottom: 0;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  /* 手机上卡片本身就是入口，重复的导航提示不再占用首屏高度 */
+  .intro {
+    &__hints,
+    &__tip {
+      display: none;
+    }
+
+    &__lead {
+      margin-bottom: 0;
+    }
+  }
+}
 </style>

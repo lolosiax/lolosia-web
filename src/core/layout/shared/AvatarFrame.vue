@@ -8,6 +8,8 @@ import { useAuthStore } from '@/core/stores/auth'
 
 defineOptions({ name: 'AvatarFrame' })
 
+withDefaults(defineProps<{ placement?: 'right-end' | 'bottom-end' }>(), { placement: 'right-end' })
+
 const auth = useAuthStore()
 const router = useRouter()
 const avatarFailed = ref(false)
@@ -43,7 +45,7 @@ async function handleLogout(): Promise<void> {
 </script>
 
 <template>
-  <ElDropdown trigger="click" placement="right-end" class="avatar-frame">
+  <ElDropdown trigger="click" :placement="placement" class="avatar-frame">
     <button class="avatar-frame__trigger" type="button" aria-label="用户菜单">
       <img v-if="showAvatar" class="avatar-frame__image" :src="auth.avatarUrl" alt="" @error="avatarFailed = true" />
       <i v-else class="bi bi-person-circle avatar-frame__placeholder" aria-hidden="true" />
