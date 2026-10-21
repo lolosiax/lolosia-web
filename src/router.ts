@@ -6,6 +6,7 @@ import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { filesRoutes } from '@/modules/files/routes'
 import { footprintRoutes } from '@/modules/footprint/routes'
 import { profileRoute, systemRoutes } from '@/modules/system/routes'
+import { siteRoutes } from '@/modules/site/routes'
 
 /**
  * 应用路由组合根。
@@ -16,6 +17,8 @@ import { profileRoute, systemRoutes } from '@/modules/system/routes'
 
 /** 后端菜单如果下发 component 字符串，按这张表解析；未登记会直接报错。 */
 registerRouteComponents({
+  'site/landing': () => import('@/modules/site/pages/LandingPage.vue'),
+  'site/hero': () => import('@/modules/site/pages/HeroPage.vue'),
   'dashboard/index': () => import('@/modules/dashboard/pages/DashboardPage.vue'),
   'files/index': () => import('@/modules/files/pages/FilesPage.vue'),
   'footprint/index': () => import('@/modules/footprint/pages/FootprintPage.vue'),
@@ -28,6 +31,7 @@ registerRouteComponents({
 
 /** 布局内的一级菜单（侧栏直接渲染这一层）。 */
 export const menuRoutes: RouteRecordRaw[] = [
+  ...siteRoutes(),
   ...dashboardRoutes(),
   ...systemRoutes(),
   ...filesRoutes(),
@@ -44,7 +48,7 @@ const routes: RouteRecordRaw[] = [
     meta: { hidden: true, public: true }
   },
   ...errorRoutes(),
-  layoutRoute(menuRoutes, '/dashboard'),
+  layoutRoute(menuRoutes),
   catchAllRoute()
 ]
 

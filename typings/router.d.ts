@@ -22,6 +22,8 @@ declare module 'vue-router' {
     roles?: string[]
     /** 不登录也能访问 */
     public?: boolean
+    /** 全屏页面：跳过侧栏与顶栏，只渲染页面本身 */
+    bare?: boolean
   }
 }
 
