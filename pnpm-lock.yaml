@@ -11,9 +11,6 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.2
         version: 2.3.2(vue@3.5.44(typescript@5.9.3))
-      '@vue/devtools-api':
-        specifier: ^8.2.1
-        version: 8.2.1
       axios:
         specifier: ^1.20.0
         version: 1.20.0
@@ -29,15 +26,9 @@ importers:
       gsap:
         specifier: ^3.15.0
         version: 3.15.0
-      hash.js:
-        specifier: ^1.1.7
-        version: 1.1.7
       lunar-calendar:
         specifier: ^0.1.4
         version: 0.1.4
-      mitt:
-        specifier: ^3.0.1
-        version: 3.0.1
       moment-mini:
         specifier: ^2.29.4
         version: 2.29.4
@@ -50,9 +41,6 @@ importers:
       pinia-plugin-persistedstate:
         specifier: 4.7.1
         version: 4.7.1(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))
-      spark-md5:
-        specifier: ^3.0.2
-        version: 3.0.2
       three:
         specifier: ^0.186.1
         version: 0.186.1
@@ -62,9 +50,6 @@ importers:
       vue-clipboard3:
         specifier: ^2.0.0
         version: 2.0.0
-      vue-cropper:
-        specifier: 1.1.4
-        version: 1.1.4
       vue-router:
         specifier: 4.6.4
         version: 4.6.4(vue@3.5.44(typescript@5.9.3))
@@ -78,9 +63,6 @@ importers:
       '@types/nprogress':
         specifier: ^0.2.3
         version: 0.2.3
-      '@types/spark-md5':
-        specifier: ^3.0.5
-        version: 3.0.5
       '@types/three':
         specifier: ^0.186.0
         version: 0.186.0
@@ -587,9 +569,6 @@ packages:
 
   '@types/nprogress@0.2.3':
     resolution: {integrity: sha512-k7kRA033QNtC+gLc4VPlfnue58CM1iQLgn1IMAU8VPHGOj7oIHPp9UlhedEnD/Gl8evoCjwkZjlBORtZ3JByUA==}
-
-  '@types/spark-md5@3.0.5':
-    resolution: {integrity: sha512-lWf05dnD42DLVKQJZrDHtWFidcLrHuip01CtnC2/S6AMhX4t9ZlEUj4iuRlAnts0PQk7KESOqKxeGE/b6sIPGg==}
 
   '@types/stats.js@0.17.4':
     resolution: {integrity: sha512-jIBvWWShCvlBqBNIZt0KAshWpvSjhkwkEu4ZUcASoAvhmrgAUI2t1dXrjSL4xXVLB4FznPrIsX3nKXFl/Dt4vA==}
@@ -1186,9 +1165,6 @@ packages:
     resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
     engines: {node: '>= 0.4'}
 
-  hash.js@1.1.7:
-    resolution: {integrity: sha512-taOaskGt4z4SOANNseOviYDvjEJinIkRgmp7LbKP2YTTmVxWBl87s/uzK9r+44BclBSp2X7K1hqeNfz9JbBeXA==}
-
   hashery@1.5.1:
     resolution: {integrity: sha512-iZyKG96/JwPz1N55vj2Ie2vXbhu440zfUfJvSwEqEbeLluk7NnapfGqa7LH0mOsnDxTF85Mx8/dyR6HfqcbmbQ==}
     engines: {node: '>=20'}
@@ -1227,9 +1203,6 @@ packages:
   imurmurhash@0.1.4:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
     engines: {node: '>=0.8.19'}
-
-  inherits@2.0.4:
-    resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
   is-extglob@2.1.1:
     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
@@ -1384,15 +1357,9 @@ packages:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
 
-  minimalistic-assert@1.0.1:
-    resolution: {integrity: sha512-UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A==}
-
   minimatch@10.2.6:
     resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
     engines: {node: 18 || 20 || >=22}
-
-  mitt@3.0.1:
-    resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
 
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
@@ -1711,9 +1678,6 @@ packages:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
-  spark-md5@3.0.2:
-    resolution: {integrity: sha512-wcFzz9cDfbuqe0FZzfi2or1sgyIrsDwmPwfZC4hiNidPdPINjeUwNfv5kldczoEAcjl9Y1L3SM7Uz2PUEQzxQw==}
-
   srvx@1.0.6:
     resolution: {integrity: sha512-QeTKgAhk8OSsfeq60bl3wuVs9PmBftzmk7owBInA/F1YQne+TRw0UcPymNpURldAmx8hfmM2PNNGH/zgo3GpLA==}
     engines: {node: '>=20.16.0'}
@@ -1923,9 +1887,6 @@ packages:
 
   vue-component-type-helpers@3.3.13:
     resolution: {integrity: sha512-02KCxSmKDhIITjKyJ4QT5csP6L0WoRborLqY/34a40+S9uvMvdNgMV0yVjO3p2Gkz3ZoPmFz/0JsGHacwJYTxw==}
-
-  vue-cropper@1.1.4:
-    resolution: {integrity: sha512-5m98vBsCEI9rbS4JxELxXidtAui3qNyTHLHg67Qbn7g8cg+E6LcnC+hh3SM/p94x6mFh6KRxT1ttnta+wCYqWA==}
 
   vue-eslint-parser@10.4.1:
     resolution: {integrity: sha512-Gk6gRDj0n/fkRa3C3l0bBheoBckUq/Rs0F/TvMWIS6nzzx67amAViMe9CkNgsP2tXyQONvGiHQESHwFtZ3aYDA==}
@@ -2302,8 +2263,6 @@ snapshots:
       undici-types: 8.9.0
 
   '@types/nprogress@0.2.3': {}
-
-  '@types/spark-md5@3.0.5': {}
 
   '@types/stats.js@0.17.4': {}
 
@@ -3057,11 +3016,6 @@ snapshots:
     dependencies:
       has-symbols: 1.1.0
 
-  hash.js@1.1.7:
-    dependencies:
-      inherits: 2.0.4
-      minimalistic-assert: 1.0.1
-
   hashery@1.5.1:
     dependencies:
       hookified: 1.15.1
@@ -3092,8 +3046,6 @@ snapshots:
   import-meta-resolve@4.2.0: {}
 
   imurmurhash@0.1.4: {}
-
-  inherits@2.0.4: {}
 
   is-extglob@2.1.1: {}
 
@@ -3213,13 +3165,9 @@ snapshots:
     dependencies:
       mime-db: 1.52.0
 
-  minimalistic-assert@1.0.1: {}
-
   minimatch@10.2.6:
     dependencies:
       brace-expansion: 5.0.12
-
-  mitt@3.0.1: {}
 
   mlly@1.8.2:
     dependencies:
@@ -3514,8 +3462,6 @@ snapshots:
 
   source-map-js@1.2.2: {}
 
-  spark-md5@3.0.2: {}
-
   srvx@1.0.6: {}
 
   supports-color@8.1.1:
@@ -3691,8 +3637,6 @@ snapshots:
       clipboard: 2.0.11
 
   vue-component-type-helpers@3.3.13: {}
-
-  vue-cropper@1.1.4: {}
 
   vue-eslint-parser@10.4.1(eslint@10.13.0(jiti@2.7.0)):
     dependencies:
