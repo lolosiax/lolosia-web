@@ -50,6 +50,8 @@ function tagStyle(tag: HotTagView): Record<string, string> {
 
 <style scoped lang="scss">
 .hot-tags {
+  display: flex;
+  flex-direction: column;
   padding: 16px 18px;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 18px;
@@ -63,13 +65,14 @@ function tagStyle(tag: HotTagView): Record<string, string> {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
   }
 
   &__title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     color: #4a3d4d;
     font-size: 13px;
     font-weight: 600;
@@ -82,25 +85,31 @@ function tagStyle(tag: HotTagView): Record<string, string> {
 
   &__cloud {
     display: flex;
+    flex: 1 1 auto;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px 10px;
-    max-height: 132px;
-    overflow-y: auto;
+    align-content: center;
+    gap: 12px 16px;
+    padding: 4px 2px;
   }
 
   &__tag {
     display: inline-flex;
     align-items: baseline;
-    gap: 3px;
-    line-height: 1.3;
+    gap: 2px;
+    line-height: 1;
     cursor: default;
-    transition: transform 0.15s ease;
+    transition: all 0.25s ease;
 
     em {
       color: #b3a7b8;
-      font-size: 10px;
+      font-size: 0.62em;
       font-style: normal;
+      opacity: 0.6;
+    }
+
+    &:hover {
+      filter: drop-shadow(0 4px 8px rgba(164, 128, 171, 0.4));
     }
   }
 

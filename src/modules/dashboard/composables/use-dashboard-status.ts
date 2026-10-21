@@ -13,6 +13,8 @@ export function useDashboardStatus() {
   const status = ref<DashboardStatus | null>(null)
 
   const systemAvailable = computed(() => Boolean(system.value?.available))
+  /** 逐核 CPU 占用率；采集不到时为空数组。 */
+  const cpuCores = computed<number[]>(() => system.value?.cpuCores ?? [])
 
   const rings = computed<RingView[]>(() => {
     const value = system.value
@@ -106,5 +108,5 @@ export function useDashboardStatus() {
     if (statusTimer) clearInterval(statusTimer)
   })
 
-  return { system, status, systemAvailable, rings, pills, loadSystem, loadStatus }
+  return { system, status, systemAvailable, cpuCores, rings, pills, loadSystem, loadStatus }
 }

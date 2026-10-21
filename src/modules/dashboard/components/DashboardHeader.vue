@@ -46,65 +46,78 @@ const { clockTime, clockDate } = useDashboardClock()
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 18px 22px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 6px 24px rgba(31, 38, 135, 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  gap: 24px;
+  padding: 16px 22px;
+
+  &__greet {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
 
   &__line {
     display: flex;
     align-items: baseline;
-    gap: 4px;
     margin: 0;
-    color: #4a3d4d;
-    font-size: 24px;
+    color: #4a3456;
+    font-size: 41px;
+    font-weight: 800;
+    line-height: 1;
 
     strong {
-      color: var(--lolosia-color-primary-dark-2, #7c74a8);
-      font-weight: 700;
+      font-weight: 800;
+      color: transparent;
+      background: linear-gradient(115deg, #a480ab, #c296cd 26%, #8aa9e0 58%, #d98fb6);
+      background-clip: text;
+      -webkit-background-clip: text;
     }
   }
 
   &__sub {
-    margin: 8px 0 0;
+    margin: 0;
     color: #8a7a94;
-    font-size: 13px;
+    font-size: 14px;
   }
 
   &__right {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
   }
 
   &__clock {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    display: block;
+    width: 190px;
+    text-align: right;
 
     strong {
-      color: #4a3d4d;
-      font-size: 26px;
+      display: block;
+      color: transparent;
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
       font-variant-numeric: tabular-nums;
-      letter-spacing: 1px;
+      background: linear-gradient(120deg, #a480ab, #c296cd 52%, #8fb6e0);
+      background-clip: text;
+      -webkit-background-clip: text;
     }
 
     span {
+      display: block;
+      margin-top: 7px;
       color: #8a7a94;
-      font-size: 12px;
+      font-size: 12.5px;
     }
   }
 
   &__pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    justify-content: flex-end;
+    gap: 10px;
   }
 
   &__pill {
@@ -113,23 +126,23 @@ const { clockTime, clockDate } = useDashboardClock()
     grid-template-rows: auto auto;
     align-items: center;
     gap: 0 8px;
-    min-width: 96px;
-    padding: 8px 12px;
+    padding: 8px 14px;
     border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 12px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.55);
 
     i {
       grid-row: 1 / span 2;
-      color: var(--lolosia-color-primary, #a06bb0);
-      font-size: 18px;
+      color: #c296cd;
+      font-size: 16px;
     }
   }
 
   &__value {
-    color: #4a3d4d;
-    font-size: 15px;
-    font-weight: 600;
+    color: #2d1b3a;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
   }
 
@@ -137,6 +150,7 @@ const { clockTime, clockDate } = useDashboardClock()
     color: #8a7a94;
     font-size: 11px;
     font-style: normal;
+    line-height: 1;
   }
 }
 </style>

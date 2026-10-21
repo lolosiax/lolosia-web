@@ -56,6 +56,8 @@ export interface DashboardOverview {
 export interface DashboardSystem {
   available: boolean
   cpu: number
+  /** 逐核占用率（0~100）；采集不到时为空数组。 */
+  cpuCores: number[]
   mem: number
   memUsed: number
   memTotal: number

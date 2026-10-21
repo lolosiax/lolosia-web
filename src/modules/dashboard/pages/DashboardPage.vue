@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 仪表盘：只做编排，数据来自四个 composable，展示块都在 components 里。
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppPage from '@/core/ui/AppPage.vue'
 import { useAuthStore } from '@/core/stores/auth'
 import DashboardBackdrop from '../components/DashboardBackdrop.vue'
@@ -31,26 +31,54 @@ const auth = useAuthStore()
 const { greeting } = useDashboardClock()
 const name = computed(() => auth.displayName || '朋友')
 
-const { rings, pills, systemAvailable } = useDashboardStatus()
+const { rings, pills, systemAvailable, cpuCores } = useDashboardStatus()
 const { recommended, watching, hotTags, ipRows, originRows, activeFiles, recentFiles } = useDashboardOverview()
 const { activeRange, seriesMap, setRange } = useDashboardMetrics()
+
+/** 首屏高度按头部实际高度计算，和原项目 dashboard 的 --head-h 一致。 */
+const headRef = ref<HTMLElement | null>(null)
+const headH = ref(140)
+let headObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  if (!headRef.value) return
+  headH.value = headRef.value.offsetHeight
+  if (typeof ResizeObserver === 'undefined') return
+  headObserver = new ResizeObserver(() => {
+    headH.value = headRef.value?.offsetHeight ?? headH.value
+  })
+  headObserver.observe(headRef.value)
+})
+
+onBeforeUnmount(() => {
+  headObserver?.disconnect()
+  headObserver = null
+})
 </script>
 
 <template>
   <AppPage>
-    <div class="dashboard">
+    <div class="dashboard" :style="{ '--head-h': `${headH}px` }">
       <DashboardBackdrop />
 
-      <DashboardHeader class="dashboard__head" :greeting="greeting" :name="name" :pills="pills" />
+      <div ref="headRef" class="dashboard__head">
+        <DashboardHeader :greeting="greeting" :name="name" :pills="pills" />
+      </div>
 
       <section class="dashboard__hero">
         <div class="dashboard__col">
-          <SystemRings :rings="rings" :available="systemAvailable" />
-          <MetricsCard :ranges="RANGES" :range="activeRange" :series-map="seriesMap" @update:range="setRange" />
+          <SystemRings :rings="rings" :available="systemAvailable" :cpu-cores="cpuCores" />
+          <MetricsCard
+            class="dashboard__monitor"
+            :ranges="RANGES"
+            :range="activeRange"
+            :series-map="seriesMap"
+            @update:range="setRange"
+          />
         </div>
         <div class="dashboard__col">
-          <RecommendWall :items="recommended" />
-          <HotTags :tags="hotTags" />
+          <RecommendWall class="dashboard__recommend" :items="recommended" />
+          <HotTags class="dashboard__tags" :tags="hotTags" />
         </div>
       </section>
 
@@ -70,10 +98,10 @@ const { activeRange, seriesMap, setRange } = useDashboardMetrics()
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   height: 100%;
   min-height: 0;
-  padding: 6px 8px 28px;
+  padding: 6px 8px 24px;
   overflow-x: hidden;
   overflow-y: auto;
 
@@ -81,26 +109,55 @@ const { activeRange, seriesMap, setRange } = useDashboardMetrics()
   &__hero,
   &__rest {
     position: relative;
-    z-index: 1;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 1560px;
+    margin-right: auto;
+    margin-left: auto;
   }
 
   &__hero {
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
-    gap: 12px;
+    grid-template-columns: 4fr 8fr;
+    gap: 14px;
+    align-items: stretch;
+    height: calc(100dvh - var(--head-h, 140px) - 40px);
+    min-height: 380px;
   }
 
   &__col {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     min-width: 0;
+    min-height: 0;
+  }
+
+  &__monitor {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  &__recommend {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  &__tags {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 152px;
   }
 
   &__rest {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 12px;
+    gap: 14px;
   }
 
   &__cell-4 {
@@ -112,10 +169,60 @@ const { activeRange, seriesMap, setRange } = useDashboardMetrics()
   }
 }
 
+/** 实时监控与照片墙撑满首屏剩余高度。 */
+.dashboard__monitor :deep(.metrics-card__chart) {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard__monitor :deep(.metrics-card__chart svg) {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 110px;
+}
+
+.dashboard__recommend :deep(.recommend-card__wall) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dashboard__tags :deep(.hot-tags__cloud) {
+  flex: 1 1 auto;
+}
+
+/** 卡片容器与标题对齐原项目 dashboard 的 glass 样式。 */
+.dashboard :deep(article) {
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 8px 26px rgba(164, 128, 171, 0.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dashboard :deep(article [class$='__title']) {
+  color: #2d1b3a;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (max-width: 1400px) {
+  .dashboard__hero {
+    grid-template-columns: 1fr 1.7fr;
+  }
+}
+
 @media (max-width: 1100px) {
   .dashboard {
     &__hero {
       grid-template-columns: minmax(0, 1fr);
+      height: auto;
+      min-height: 0;
     }
 
     &__cell-4,

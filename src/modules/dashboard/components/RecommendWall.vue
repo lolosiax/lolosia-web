@@ -36,6 +36,9 @@ function hideImage(event: Event): void {
 
 <style scoped lang="scss">
 .recommend-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding: 16px 18px;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 18px;
@@ -49,13 +52,14 @@ function hideImage(event: Event): void {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
   }
 
   &__title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     color: #4a3d4d;
     font-size: 13px;
     font-weight: 600;
@@ -68,16 +72,21 @@ function hideImage(event: Event): void {
 
   &__wall {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-auto-rows: 82px;
-    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   &__photo {
     position: relative;
+    min-height: 0;
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: 14px;
     background: rgba(164, 128, 171, 0.08);
+    box-shadow: 0 6px 16px rgba(164, 128, 171, 0.2);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
 
     img {
       width: 100%;
@@ -86,12 +95,21 @@ function hideImage(event: Event): void {
       transition: transform 0.35s ease;
     }
 
-    &:hover img {
-      transform: scale(1.05);
+    &:hover {
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 14px 30px rgba(164, 128, 171, 0.35);
+
+      img {
+        transform: scale(1.08);
+      }
+
+      .recommend-card__name {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     &.is-port {
-      grid-column: span 2;
       grid-row: span 2;
     }
 
@@ -102,15 +120,20 @@ function hideImage(event: Event): void {
 
   &__name {
     position: absolute;
-    right: 6px;
-    bottom: 5px;
-    left: 6px;
+    right: 0;
+    bottom: 0;
+    left: 0;
     overflow: hidden;
+    padding: 16px 10px 8px;
+    background: linear-gradient(to top, rgba(45, 27, 58, 0.72), transparent);
     color: #fff;
-    font-size: 10px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+    font-size: 12px;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: all 0.35s ease;
   }
 
   &__empty {

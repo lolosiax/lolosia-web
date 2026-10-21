@@ -195,6 +195,9 @@ function pickRange(range: string): void {
 
 <style scoped lang="scss">
 .metrics-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding: 16px 18px;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 18px;
@@ -208,13 +211,13 @@ function pickRange(range: string): void {
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
   }
 
   &__title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     color: #4a3d4d;
     font-size: 13px;
     font-weight: 600;
@@ -222,105 +225,120 @@ function pickRange(range: string): void {
 
   &__ranges {
     display: flex;
-    gap: 4px;
-    padding: 2px;
-    border-radius: 999px;
-    background: rgba(164, 128, 171, 0.1);
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   &__range {
-    padding: 3px 9px;
-    border: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 1px solid rgba(164, 128, 171, 0.25);
     border-radius: 999px;
-    background: transparent;
+    background: rgba(255, 255, 255, 0.6);
     color: #8a7a94;
     font: inherit;
-    font-size: 11px;
+    font-size: 12px;
     cursor: pointer;
+    transition: all 0.25s ease;
+
+    &:hover {
+      border-color: rgba(164, 128, 171, 0.5);
+      color: #2d1b3a;
+    }
 
     &.is-active {
-      background: #fff;
-      color: var(--lolosia-color-primary-dark-2, #7c74a8);
-      box-shadow: 0 2px 6px rgba(31, 38, 135, 0.1);
+      border-color: transparent;
+      background: var(--lolosia-color-primary, #c296cd);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(164, 128, 171, 0.35);
     }
   }
 
   &__pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 10px;
+    gap: 6px;
+    margin-bottom: 12px;
   }
 
   &__pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 9px;
-    border: 1px solid transparent;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid rgba(164, 128, 171, 0.25);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.6);
     color: #8a7a94;
     font: inherit;
-    font-size: 11px;
+    font-size: 12px;
     cursor: pointer;
+    transition: all 0.25s ease;
+
+    &:hover {
+      border-color: rgba(164, 128, 171, 0.5);
+      color: #2d1b3a;
+    }
 
     &.is-active {
-      border-color: var(--pill-color, #a480ab);
-      color: var(--pill-color, #a480ab);
+      border-color: transparent;
+      background: var(--pill-color, #a480ab);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(164, 128, 171, 0.35);
     }
   }
 
   &__readout {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    margin-top: 10px;
+    margin-bottom: 6px;
   }
 
   &__main {
     display: flex;
     align-items: baseline;
-    gap: 5px;
+    gap: 6px;
 
     strong {
       color: var(--accent, #4a3d4d);
-      font-size: 28px;
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
       font-variant-numeric: tabular-nums;
     }
 
     span {
       color: #8a7a94;
-      font-size: 11px;
+      font-size: 13px;
     }
   }
 
   &__live {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(138, 122, 148, 0.12);
+    gap: 6px;
     color: #8a7a94;
-    font-size: 10px;
-    letter-spacing: 0.5px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: color 0.3s ease;
 
     i {
-      font-size: 6px;
+      font-size: 8px;
     }
 
     &.is-on {
-      background: rgba(76, 175, 130, 0.14);
-      color: #3d9c72;
+      color: #4caf82;
     }
   }
 
   &__chart {
     position: relative;
     height: 168px;
-    margin-top: 6px;
+    margin-bottom: 8px;
 
     svg {
       width: 100%;
@@ -330,14 +348,16 @@ function pickRange(range: string): void {
   }
 
   &__grid {
-    stroke: rgba(164, 128, 171, 0.12);
+    stroke: rgba(164, 128, 171, 0.1);
     stroke-width: 1;
   }
 
   &__line {
     fill: none;
-    stroke-width: 2;
+    stroke-width: 2.4;
     stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 2px 6px rgba(164, 128, 171, 0.25));
   }
 
   &__empty {
@@ -353,35 +373,37 @@ function pickRange(range: string): void {
   &__axis {
     display: flex;
     justify-content: space-between;
+    padding: 0 2px;
     color: #a99cae;
-    font-size: 10px;
+    font-size: 10.5px;
   }
 
   &__legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 14px;
-    margin-top: 8px;
+    gap: 16px;
+    margin-top: 4px;
   }
 
   &__legend-item {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #6f6274;
-    font-size: 11px;
+    color: #8a7a94;
+    font-size: 12px;
 
     em {
-      color: #4a3d4d;
+      color: #2d1b3a;
       font-style: normal;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
   }
 
   &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
   }
 }
 </style>
