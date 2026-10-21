@@ -30,7 +30,7 @@ export function loadAmap(): Promise<AmapNamespace> {
     const script = document.createElement('script')
     script.type = 'text/javascript'
     script.async = true
-    script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(amap.key)}`
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(amap.key)}&plugin=AMap.DistrictLayer`
     script.onload = () => {
       const namespace = (window as { AMap?: AmapNamespace }).AMap
       if (namespace) resolve(namespace)

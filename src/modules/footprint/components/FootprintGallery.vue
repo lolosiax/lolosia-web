@@ -10,6 +10,11 @@ const props = defineProps<{
   loading: boolean
   brokenThumbs: Set<string>
   revealed: Record<string, boolean>
+  /** 抽屉里的小格子（旧版 96px，主区域 120px）。 */
+  compact?: boolean
+  /** 画廊标题 / 副标题（时间模式显示会话区间与张数）。 */
+  title?: string
+  subtitle?: string
 }>()
 
 const emit = defineEmits<{
@@ -33,37 +38,68 @@ function click(point: FootprintPoint, index: number): void {
 
 <template>
   <div class="fp-gallery">
-    <p v-if="loading" class="fp-gallery__note">加载中…</p>
-    <p v-else-if="!photos.length" class="fp-gallery__note">这里还没有可显示的照片。</p>
-    <div v-else class="fp-gallery__grid">
-      <button
-        v-for="(point, index) in photos"
-        :key="point.path"
-        type="button"
-        class="fp-gallery__cell"
-        :title="point.name"
-        @click="click(point, index)"
-      >
-        <img
-          v-if="!brokenThumbs.has(point.path)"
-          :class="{ 'is-blur': blurred(point) }"
-          :src="thumbOf(point)"
-          alt=""
-          loading="lazy"
-          @error="emit('broken', point.path)"
-        />
-        <span v-else class="fp-gallery__fallback"><i class="bi bi-image" /></span>
-        <span v-if="blurred(point)" class="fp-gallery__mask"><i class="bi bi-eye-slash" />点击查看</span>
-      </button>
+    <div v-if="title" class="fp-gallery__head">
+      <span class="fp-gallery__range">{{ title }}</span>
+      <span v-if="subtitle" class="fp-gallery__count">{{ subtitle }}</span>
+    </div>
+    <div class="fp-gallery__scroll">
+      <p v-if="loading" class="fp-gallery__note">加载中…</p>
+      <p v-else-if="!photos.length" class="fp-gallery__note">这里还没有可显示的照片。</p>
+      <div v-else class="fp-gallery__grid" :class="{ 'is-compact': compact }">
+        <button
+          v-for="(point, index) in photos"
+          :key="point.path"
+          type="button"
+          class="fp-gallery__cell"
+          :title="point.name"
+          @click="click(point, index)"
+        >
+          <img
+            v-if="!brokenThumbs.has(point.path)"
+            :class="{ 'is-blur': blurred(point) }"
+            :src="thumbOf(point)"
+            alt=""
+            loading="lazy"
+            @error="emit('broken', point.path)"
+          />
+          <span v-else class="fp-gallery__fallback bi bi-image" />
+          <span v-if="blurred(point)" class="fp-gallery__mask bi bi-eye-slash">点击查看</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
 .fp-gallery {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 2px 4px 10px;
+  }
+
+  &__range {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &__count {
+    color: var(--el-text-color-secondary, #909399);
+    font-size: 12px;
+  }
+
+  &__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
 
   &__note {
     margin: 0;
@@ -77,6 +113,10 @@ function click(point: FootprintPoint, index: number): void {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 8px;
     padding: 2px;
+
+    &.is-compact {
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    }
   }
 
   &__cell {

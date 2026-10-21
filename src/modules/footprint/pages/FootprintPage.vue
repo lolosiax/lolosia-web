@@ -5,11 +5,13 @@ import { ElMessage } from 'element-plus'
 import AppPage from '@/core/ui/AppPage.vue'
 import FootprintGallery from '../components/FootprintGallery.vue'
 import FootprintMap from '../components/FootprintMap.vue'
+import FootprintMinimap from '../components/FootprintMinimap.vue'
+import FootprintPanel from '../components/FootprintPanel.vue'
 import FootprintSidebar from '../components/FootprintSidebar.vue'
 import RegionDialog from '../components/RegionDialog.vue'
 import { useFootprintOverview } from '../composables/use-footprint-overview'
 import { useFootprintTimeline } from '../composables/use-footprint-timeline'
-import { coveredByRegion, rawOf } from '../lib'
+import { coveredByRegion, periodRange, rawOf } from '../lib'
 import type { FootprintCluster, FootprintPeriod, FootprintPoint, FootprintRegion } from '../api'
 
 defineOptions({ name: 'Footprint' })
@@ -31,6 +33,8 @@ const GAP_OPTIONS = [
 const mode = ref<'place' | 'time'>('place')
 const eps = ref(250)
 const gapHours = ref(6)
+/** 右侧浮层宽度（含外边距）：聚焦时让地图把目标挪到左侧可见区。 */
+const PANEL_INSET = 460
 
 const {
   overview,
@@ -59,8 +63,14 @@ const {
 const selectedKey = ref('')
 const drawerOpen = ref(false)
 const focus = ref<{ lat: number; lon: number; zoom?: number; radiusM?: number } | null>(null)
+/** 小地图上悬浮的区域：其余点位变灰。 */
+const hoveredRegionId = ref<number | null>(null)
+/** 主地图当前视口（WGS-84），给小地图画取景框。 */
+const viewportBox = ref<{ minLat: number; minLon: number; maxLat: number; maxLon: number } | null>(null)
 const drawMode = ref(false)
 const preview = ref<{ lat: number; lon: number; radiusM: number } | null>(null)
+/** 地图 SDK / key 加载失败：和列表错误一样显示在侧栏。 */
+const mapError = ref('')
 
 /** 新建 / 编辑区域：组件自己保存，页面只提供落点与编辑目标。 */
 const regionDialog = reactive({
@@ -86,6 +96,9 @@ const selectedCluster = computed<FootprintCluster | null>(
 )
 const selectedRegion = computed<FootprintRegion | null>(
   () => regions.value.find(region => `r:${region.id}` === selectedKey.value) ?? null
+)
+const selectedPeriod = computed<FootprintPeriod | null>(
+  () => periods.value.find(period => period.id === selectedKey.value) ?? null
 )
 const drawerTitle = computed(() => {
   if (selectedRegion.value) return `${selectedRegion.value.name} · ${selectedRegion.value.count} 张`
@@ -113,6 +126,7 @@ function selectPeriod(period: FootprintPeriod): void {
 }
 
 function onViewport(box: { minLat: number; minLon: number; maxLat: number; maxLon: number; zoom: number }): void {
+  viewportBox.value = { minLat: box.minLat, minLon: box.minLon, maxLat: box.maxLat, maxLon: box.maxLon }
   if (mode.value === 'place') loadViewport(box)
 }
 
@@ -146,6 +160,16 @@ function newRegionFromCluster(): void {
 
 function editRegion(region: FootprintRegion): void {
   openRegion(region, region.lat, region.lon, region.radiusM)
+}
+
+function editSelectedRegion(): void {
+  if (selectedRegion.value) editRegion(selectedRegion.value)
+}
+
+/** 编辑半径时把预览圆跟着改，和旧版实时反馈一致。 */
+function onPreviewRadius(radiusM: number): void {
+  if (!preview.value) return
+  preview.value = { ...preview.value, radiusM }
 }
 
 function onRegionSaved(): void {
@@ -183,6 +207,7 @@ function openViewer(list: FootprintPoint[], index: number): void {
 watch(mode, async value => {
   selectedKey.value = ''
   drawerOpen.value = false
+  hoveredRegionId.value = null
   if (value === 'time') {
     viewportPoints.value = []
     if (!timeline.value) await loadTimeline(gapHours.value)
@@ -206,7 +231,7 @@ onMounted(() => void loadOverview(eps.value))
   <AppPage>
     <div class="footprint">
       <header class="footprint__toolbar">
-        <ElRadioGroup v-model="mode" size="small">
+        <ElRadioGroup v-model="mode">
           <ElRadioButton value="place">地点</ElRadioButton>
           <ElRadioButton value="time">时间</ElRadioButton>
         </ElRadioGroup>
@@ -219,20 +244,25 @@ onMounted(() => void loadOverview(eps.value))
         </span>
 
         <span v-if="mode === 'place'" class="footprint__label">聚簇粒度</span>
-        <ElSelect v-if="mode === 'place'" v-model="eps" size="small" class="footprint__select">
+        <ElSelect v-if="mode === 'place'" v-model="eps" class="footprint__select">
           <ElOption v-for="option in EPS_OPTIONS" :key="option.value" :label="option.label" :value="option.value" />
         </ElSelect>
-        <ElButton v-if="mode === 'place'" size="small" :type="drawMode ? 'success' : 'primary'" @click="startDraw">
+        <ElButton
+          v-if="mode === 'place'"
+          size="default"
+          :type="drawMode ? 'success' : 'primary'"
+          @click="startDraw"
+        >
           <i class="bi bi-plus-circle" />
           新建区域
         </ElButton>
         <span v-if="mode === 'time'" class="footprint__label">会话间隔</span>
-        <ElSelect v-if="mode === 'time'" v-model="gapHours" size="small" class="footprint__select is-narrow">
+        <ElSelect v-if="mode === 'time'" v-model="gapHours" class="footprint__select is-narrow">
           <ElOption v-for="option in GAP_OPTIONS" :key="option.value" :label="option.label" :value="option.value" />
         </ElSelect>
 
         <ElButton
-          size="small"
+          size="default"
           :loading="mode === 'place' ? placeLoading : timelineLoading"
           @click="mode === 'place' ? loadOverview(eps) : loadTimeline(gapHours)"
         >
@@ -245,7 +275,7 @@ onMounted(() => void loadOverview(eps.value))
         <FootprintSidebar
           :mode="mode"
           :loading="mode === 'place' ? placeLoading : timelineLoading"
-          :error="placeError"
+          :error="placeError || mapError"
           :regions="regions"
           :clusters="hotspotClusters"
           :periods="periods"
@@ -255,10 +285,11 @@ onMounted(() => void loadOverview(eps.value))
           @select-cluster="selectCluster"
           @select-period="selectPeriod"
           @edit-region="editRegion"
+          @hover-region="hoveredRegionId = $event"
           @broken="markBroken"
         />
 
-        <section class="footprint__main">
+        <section class="footprint__main" :class="{ 'is-time': mode === 'time' }">
           <FootprintMap
             v-show="mode === 'place'"
             ref="mapRef"
@@ -270,14 +301,17 @@ onMounted(() => void loadOverview(eps.value))
             :draw-mode="drawMode"
             :focus="focus"
             :preview="preview"
+            :inset-right="drawerOpen ? PANEL_INSET : 0"
             @select-cluster="selectCluster"
             @select-region="selectRegion"
             @pick-point="onPickPoint"
             @viewport="onViewport"
-            @error="placeError = $event"
+            @error="mapError = $event"
           />
           <FootprintGallery
             v-if="mode === 'time'"
+            :title="selectedPeriod ? periodRange(selectedPeriod) : '拍摄会话'"
+            :subtitle="selectedPeriod ? `${selectedPeriod.count} 张` : ''"
             :photos="timePhotos"
             :loading="timePhotosLoading"
             :broken-thumbs="brokenThumbs"
@@ -286,28 +320,34 @@ onMounted(() => void loadOverview(eps.value))
             @reveal="reveal"
             @broken="markBroken"
           />
+          <FootprintPanel
+            v-if="drawerOpen && mode === 'place'"
+            :title="drawerTitle"
+            :photos="placePhotos"
+            :loading="placePhotosLoading"
+            :broken-thumbs="brokenThumbs"
+            :revealed="revealed"
+            :can-save-region="!!selectedCluster"
+            :can-edit-region="!!selectedRegion"
+            @close="drawerOpen = false"
+            @save-region="newRegionFromCluster"
+            @edit-region="editSelectedRegion"
+            @pick="openViewer(placePhotos, $event)"
+            @reveal="reveal"
+            @broken="markBroken"
+          />
+          <FootprintMinimap
+            v-show="mode === 'place'"
+            :regions="regions"
+            :active-id="selectedRegion?.id ?? null"
+            :hovered-id="hoveredRegionId"
+            :bounds="viewportBox"
+            :shifted="drawerOpen"
+            @select="selectRegion"
+            @hover="hoveredRegionId = $event"
+          />
         </section>
       </div>
-
-      <ElDrawer v-model="drawerOpen" :title="drawerTitle" size="440px" append-to-body>
-        <div class="footprint__drawer-actions">
-          <ElButton v-if="selectedCluster" size="small" type="primary" @click="newRegionFromCluster">
-            保存为区域
-          </ElButton>
-          <ElButton v-if="selectedRegion" size="small" @click="editRegion(selectedRegion)">
-            编辑区域
-          </ElButton>
-        </div>
-        <FootprintGallery
-          :photos="placePhotos"
-          :loading="placePhotosLoading"
-          :broken-thumbs="brokenThumbs"
-          :revealed="revealed"
-          @pick="openViewer(placePhotos, $event)"
-          @reveal="reveal"
-          @broken="markBroken"
-        />
-      </ElDrawer>
 
       <RegionDialog
         v-model="regionDialog.open"
@@ -316,6 +356,7 @@ onMounted(() => void loadOverview(eps.value))
         :lon="regionDialog.lon"
         :radius-m="regionDialog.radiusM"
         @saved="onRegionSaved"
+        @preview-radius="onPreviewRadius"
       />
 
       <ElImageViewer
@@ -351,6 +392,41 @@ onMounted(() => void loadOverview(eps.value))
     box-shadow: 0 4px 16px rgba(31, 38, 135, 0.12);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+
+    :deep(.el-radio-group) {
+      height: 38px;
+    }
+
+    :deep(.el-radio-button__inner) {
+      height: 38px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 0;
+      background: #f2eaf8;
+      box-shadow: none;
+      color: #6b5a73;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 38px;
+    }
+
+    :deep(.el-radio-button:first-child .el-radio-button__inner) {
+      border-radius: 12px 0 0 12px;
+    }
+
+    :deep(.el-radio-button:last-child .el-radio-button__inner) {
+      border-radius: 0 12px 12px 0;
+    }
+
+    :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+      background: linear-gradient(135deg, #c296cd, #8d6aa0);
+      box-shadow: none;
+      color: #fff;
+    }
+
+    :deep(.el-button > i) {
+      margin-right: 5px;
+    }
   }
 
   &__stat {
@@ -397,16 +473,17 @@ onMounted(() => void loadOverview(eps.value))
     box-shadow: 0 4px 16px rgba(31, 38, 135, 0.12);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+
+    /* 时间模式：标题 + 画廊上下排，旧版主面板同样留 12px 内边距 */
+    &.is-time {
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+    }
   }
 
   &__map {
     border-radius: 16px;
-  }
-
-  &__drawer-actions {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
   }
 }
 </style>

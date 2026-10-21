@@ -21,6 +21,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   saved: []
+  /** 半径实时变化：页面拿去做地图预览圆。 */
+  'preview-radius': [value: number]
 }>()
 
 const visible = computed({
@@ -44,6 +46,13 @@ watch(
     form.radiusM = props.region?.radiusM ?? props.radiusM
     form.color = props.region?.color || DEFAULT_REGION_COLOR
     form.description = props.region?.description ?? ''
+  }
+)
+
+watch(
+  () => form.radiusM,
+  value => {
+    if (props.modelValue) emit('preview-radius', value)
   }
 )
 

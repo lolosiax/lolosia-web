@@ -29,6 +29,7 @@ const emit = defineEmits<{
   'select-cluster': [cluster: FootprintCluster]
   'select-period': [period: FootprintPeriod]
   'edit-region': [region: FootprintRegion]
+  'hover-region': [id: number | null]
   broken: [path: string]
 }>()
 
@@ -61,6 +62,8 @@ function thumbSrc(item: { path: string; exp: number; sig: string }): string {
           editable
           @select="emit('select-region', region)"
           @edit="emit('edit-region', region)"
+          @hover="emit('hover-region', region.id)"
+          @hover-end="emit('hover-region', null)"
           @broken="emit('broken', region.samplePath)"
         />
 
@@ -73,6 +76,7 @@ function thumbSrc(item: { path: string; exp: number; sig: string }): string {
           :sub="clusterRange(cluster)"
           :active="selectedKey === `c:${cluster.id}`"
           @select="emit('select-cluster', cluster)"
+          @hover="emit('hover-region', null)"
           @broken="emit('broken', cluster.samplePath)"
         />
       </template>

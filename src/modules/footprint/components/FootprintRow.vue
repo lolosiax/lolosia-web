@@ -16,11 +16,20 @@ const emit = defineEmits<{
   select: []
   edit: []
   broken: []
+  hover: []
+  'hover-end': []
 }>()
 </script>
 
 <template>
-  <button type="button" class="fp-row" :class="{ 'is-active': active }" @click="emit('select')">
+  <button
+    type="button"
+    class="fp-row"
+    :class="{ 'is-active': active }"
+    @click="emit('select')"
+    @mouseenter="emit('hover')"
+    @mouseleave="emit('hover-end')"
+  >
     <img v-if="thumbSrc" class="fp-row__thumb" :src="thumbSrc" alt="" loading="lazy" @error="emit('broken')" />
     <span v-else class="fp-row__thumb is-fallback"><i class="bi bi-image" /></span>
     <span class="fp-row__main">
