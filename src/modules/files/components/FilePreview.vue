@@ -105,7 +105,7 @@ const pending = computed(() => Boolean(props.entry?.image && !props.entry.thumb)
       <div class="file-preview__name" :title="entry.name">{{ entry.name }}</div>
 
       <div class="file-preview__remark">
-        <FileRemark :value="remark" :disabled="remarkDisabled" @save="emit('save-remark', $event)" />
+        <FileRemark :value="remark" :disabled="remarkDisabled || loading" @save="emit('save-remark', $event)" />
       </div>
 
       <button v-if="!entry.directory" type="button" class="file-preview__property" @click="emit('property')">
@@ -113,7 +113,7 @@ const pending = computed(() => Boolean(props.entry?.image && !props.entry.thumb)
         属性与评级
       </button>
 
-      <div v-if="loading" class="file-preview__loading">读取详情…</div>
+      <div v-if="loading && !detail" class="file-preview__loading">读取详情…</div>
       <dl v-else class="file-preview__rows">
         <template v-for="row in rows" :key="row.label">
           <dt>{{ row.label }}</dt>
@@ -121,11 +121,19 @@ const pending = computed(() => Boolean(props.entry?.image && !props.entry.thumb)
         </template>
       </dl>
     </template>
+
+    <Transition name="preview-fade">
+      <div v-if="loading" class="file-preview__busy">
+        <i class="bi bi-arrow-repeat" />
+        <span>加载中…</span>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <style scoped lang="scss">
 .file-preview {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -228,6 +236,30 @@ const pending = computed(() => Boolean(props.entry?.image && !props.entry.thumb)
     font-size: 12px;
   }
 
+  /* 加载期间盖住旧内容，避免详情先清空再填回造成频闪 */
+  &__busy {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: inherit;
+    background: rgba(250, 247, 252, 0.55);
+    color: var(--el-text-color-secondary, #999);
+    font-size: 12px;
+    backdrop-filter: blur(2px);
+    /* 请求很快时不闪现：内容本身会原地更新，超过 100ms 才显示加载态 */
+    animation: preview-busy-in 0.15s ease 0.1s both;
+
+    i {
+      font-size: 1.5em;
+      animation: preview-spin 0.9s linear infinite;
+    }
+  }
+
   &__rows {
     display: grid;
     grid-template-columns: 68px 1fr;
@@ -244,6 +276,33 @@ const pending = computed(() => Boolean(props.entry?.image && !props.entry.thumb)
       color: var(--el-text-color-regular, #444);
       word-break: break-all;
     }
+  }
+}
+</style>
+
+<style scoped lang="scss">
+/* Transition 的类名必须挂在根上，单独放一个块，避免打断上面的 BEM 嵌套 */
+.preview-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.preview-fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes preview-busy-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes preview-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

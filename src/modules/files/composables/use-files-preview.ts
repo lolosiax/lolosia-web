@@ -12,26 +12,23 @@ import type { UiEntry } from '../types'
 
 /** 右侧预览：单文件详情、媒体信息、目录标签与备注。 */
 export function useFilesPreview() {
-  /** 当前预览对应的路径；异步数据回来时用它认领，免得把上一项的结果画到新选中项上。 */
+  /** 已加载完成的预览路径；异步数据回来前保持上一项，标签栏据此判断数据是否属于当前项。 */
   const path = ref('')
+  /** 最近一次请求的路径，用于丢弃过期响应。 */
+  const requestPath = ref('')
   const detail = ref<FileDetail | null>(null)
   const media = ref<MediaDetail | null>(null)
   const tagsOfFolder = ref<MediaTagItem[]>([])
   const remarkOfFolder = ref('')
   const loading = ref(false)
+  /** 当前预览项是不是目录（决定备注取 folder_remark 还是 caption）。 */
+  const directory = ref(false)
 
-  const remark = computed(() => {
-    const entry = detail.value?.entry
-    if (!entry) return ''
-    return entry.directory ? remarkOfFolder.value : media.value?.caption ?? ''
-  })
+  const remark = computed(() => (directory.value ? remarkOfFolder.value : media.value?.caption ?? ''))
 
   async function load(entry: UiEntry): Promise<void> {
-    path.value = entry.path
-    detail.value = null
-    media.value = null
-    tagsOfFolder.value = []
-    remarkOfFolder.value = ''
+    // 先保留上一项的详情：加载期间由面板显示 loading，避免先清空再填回造成频闪。
+    requestPath.value = entry.path
     loading.value = true
     try {
       if (entry.directory) {
@@ -39,7 +36,11 @@ export function useFilesPreview() {
           folderTags(entry.path).catch(() => []),
           folderRemark(entry.path).catch(() => ({ path: entry.path, remark: '' }))
         ])
-        if (path.value !== entry.path) return
+        if (requestPath.value !== entry.path) return
+        path.value = entry.path
+        directory.value = true
+        detail.value = null
+        media.value = null
         tagsOfFolder.value = tags
         remarkOfFolder.value = mark.remark
         return
@@ -49,11 +50,13 @@ export function useFilesPreview() {
         fileDetail(entry.path).catch(() => null),
         mediaDetail(entry.path).catch(() => null)
       ])
-      if (path.value !== entry.path) return
+      if (requestPath.value !== entry.path) return
+      path.value = entry.path
+      directory.value = false
       detail.value = file
       media.value = info
     } finally {
-      if (path.value === entry.path) loading.value = false
+      if (requestPath.value === entry.path) loading.value = false
     }
   }
 
@@ -65,10 +68,13 @@ export function useFilesPreview() {
 
   function clear(): void {
     path.value = ''
+    requestPath.value = ''
     detail.value = null
     media.value = null
     tagsOfFolder.value = []
     remarkOfFolder.value = ''
+    directory.value = false
+    loading.value = false
   }
 
   return { path, detail, media, tagsOfFolder, remark, loading, load, saveRemark, clear }

@@ -2,7 +2,8 @@
 // 全屏媒体查看器：图片（缩放 / 平移）与视频（原生播放）共用一个浮层。
 // 上一张 / 下一张在当前目录的可查看项之间循环，顺序与网格一致。
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { isVideo, isViewable, needsBlur, previewUrl, rawUrl } from '../api'
+import { isVideo, isViewable, needsBlur, rawUrl } from '../api'
+import { useMediaSource } from '../composables/use-media-source'
 import { useMediaVideo } from '../composables/use-media-video'
 import { useMediaZoom } from '../composables/use-media-zoom'
 import type { NsfwMode, UiEntry } from '../types'
@@ -42,8 +43,16 @@ const masked = computed(() => {
   return needsBlur(entry.rating) && !props.revealedPaths[entry.path]
 })
 
-/** 是否已经在看原图；切过去就不再切回来。 */
-const showOriginal = ref(false)
+/** 图片源：默认原始分辨率 WebP，失败退档位缩略图，原图只在用户主动点击时加载。 */
+const {
+  showOriginal,
+  failed: previewFailed,
+  src: imageSrc,
+  downloadSrc,
+  reset: resetSource,
+  onError: onSourceError,
+  showRealSize: showOriginalSize
+} = useMediaSource(() => current.value)
 
 const {
   ready,
@@ -77,18 +86,6 @@ const {
   reset: resetVideo
 } = useMediaVideo(videoRef, progressRef)
 
-const imageSrc = computed(() => {
-  const entry = current.value
-  if (!entry) return ''
-  return showOriginal.value ? rawUrl(entry, entry.thumbToken) : previewUrl(entry, entry.thumbToken)
-})
-
-const downloadSrc = computed(() => {
-  const entry = current.value
-  if (!entry) return ''
-  return `${rawUrl(entry, entry.thumbToken)}&download=1`
-})
-
 const videoSrc = computed(() => (current.value ? rawUrl(current.value, current.value.thumbToken) : ''))
 
 function onWheel(event: WheelEvent): void {
@@ -97,14 +94,12 @@ function onWheel(event: WheelEvent): void {
 }
 
 function onImageError(): void {
-  if (!showOriginal.value) {
-    showOriginal.value = true
-    resetZoom()
-  }
+  onSourceError()
+  resetZoom()
 }
 
 function showRealSize(): void {
-  showOriginal.value = true
+  showOriginalSize()
   resetZoom()
 }
 
@@ -146,7 +141,7 @@ watch(playing, value => {
 function resetView(): void {
   resetZoom()
   resetVideo()
-  showOriginal.value = false
+  resetSource()
   chromeVisible.value = true
 }
 
@@ -273,7 +268,7 @@ onUnmounted(() => {
       >
         <MediaMask v-if="masked" @reveal="revealCurrent" />
         <img
-          v-else
+          v-else-if="!previewFailed"
           ref="imgRef"
           class="media-viewer__image"
           :class="{ 'is-ready': ready }"
@@ -284,7 +279,11 @@ onUnmounted(() => {
           @load="onImageLoad"
           @error="onImageError"
         />
-        <div v-if="!ready && !masked" class="media-viewer__loading">
+        <div v-else class="media-viewer__failed">
+          <i class="bi bi-image" />
+          <span>{{ showOriginal ? '原图加载失败' : '预览暂不可用，可点左下角「显示原图」' }}</span>
+        </div>
+        <div v-if="!ready && !masked && !previewFailed" class="media-viewer__loading">
           <i class="bi bi-arrow-repeat spinning" />
           加载中…
         </div>
@@ -464,6 +463,20 @@ onUnmounted(() => {
     gap: 10px;
     color: rgba(255, 255, 255, 0.75);
     font-size: 14px;
+  }
+
+  &__failed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+
+    i {
+      font-size: 2.2em;
+      opacity: 0.6;
+    }
   }
 
   &__stage-video {

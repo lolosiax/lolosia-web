@@ -71,7 +71,6 @@ function onPick(tag: MediaTagRef): void {
 .tag-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
   min-height: 0;
 
   &__head {
