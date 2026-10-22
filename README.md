@@ -6,7 +6,7 @@
 
 **洛洛希雅的午后梦乡 · 前端**
 
-Vue 3 单页应用 —— 与 [lolosia-backend](https://github.com/lolosiax/lolosia-backend) 配套，构建产物由后端的 `viteJar` 内嵌进原生可执行文件
+Vue 3 单页应用 —— 与 [lolosia-backend](https://github.com/lolosiax/lolosia-backend) 配套，构建产物由后端的 `viteJar` 内嵌至原生可执行文件
 
 [快速开始](#快速开始) · [特性](#特性) · [目录结构](#目录结构) · [环境变量](#环境变量) · [接口约定](#接口约定) · [文档](#延伸阅读)
 
@@ -20,8 +20,8 @@ Vue 3 单页应用 —— 与 [lolosia-backend](https://github.com/lolosiax/lolo
 
 </div>
 
-- **运行形态**：构建产物部署在 `/home/`，默认由后端作为静态资源直接提供；开发时前端跑 5005、后端跑 7129，跨端口直连
-- **结构**：`core/` 只放布局、路由、请求、状态与 UI 原语，业务全部在 `modules/<域>/`，依赖方向单向
+- **运行形态**：构建产物部署于 `/home/`，默认由后端作为静态资源直接提供；开发时前端监听 5005，后端监听 7129，跨端口直连
+- **结构**：`core/` 仅包含布局、路由、请求、状态与 UI 原语，业务代码全部位于 `modules/<域>/`，依赖方向单向
 
 > 第三方数据与在线服务声明见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) · 上线前验收清单见 [doc/test-checklist.md](doc/test-checklist.md)
 
@@ -29,23 +29,23 @@ Vue 3 单页应用 —— 与 [lolosia-backend](https://github.com/lolosiax/lolo
 
 **结构与路由**
 
-- `core` / `modules` 单向依赖：`core` 不反向引用业务模块，路由表在组合根 [`src/router.ts`](src/router.ts) 拼装
-- 布局按 `meta.bare` 切换：常规页走 `LiquidLayout`，桌面用侧栏、移动端用顶栏加底部 Tab；入口页与个人主页整页呈现
-- 路由 `meta.roles` 同时决定**菜单可见性**与**能否访问**，`owner` 直通；后端 `/menu/config` 只控制菜单显隐
-- 未登录访问受限页会带 `redirect` 回登录页；用户信息与角色在首次进入时并行拉取
-- 首屏占位在 [`boot.ts`](src/boot.ts) 里先渲染 logo + 标题 + 进度条，再动态加载应用
+- `core` / `modules` 单向依赖：`core` 不反向引用业务模块，路由表在组合根 [`src/router.ts`](src/router.ts) 中组装
+- 布局按 `meta.bare` 切换：常规页使用 `LiquidLayout`，桌面端为侧栏，移动端为顶栏与底部 Tab；入口页与个人主页整页呈现
+- 路由 `meta.roles` 同时决定**菜单可见性**与**可访问性**，`owner` 直接放行；后端 `/menu/config` 仅控制菜单显隐
+- 未登录访问受限页时将携带 `redirect` 返回登录页；用户信息与角色在首次进入时并行获取
+- 首屏占位在 [`boot.ts`](src/boot.ts) 中先渲染 logo、标题与进度条，再动态加载应用
 
 **请求与实时**
 
-- axios 统一解后端信封 `{code,msg,data}`，`Bearer` 会话，`401/403` 自动清会话并跳登录
-- 错误提示可开关，开关在调试面板里
-- SSE：先 `POST /api/sse` 换 id，请求带 `x-upgrade: event-source` 头；随后开原生 `EventSource`，登录态用 `/api/sse/registry` 补绑，断线 5 秒重连
+- axios 统一解析后端信封 `{code,msg,data}`，使用 `Bearer` 会话，`401/403` 自动清除会话并跳转登录页
+- 错误提示支持开关，可在调试面板中切换
+- SSE：先 `POST /api/sse` 换取 id，请求携带 `x-upgrade: event-source` 头；随后建立原生 `EventSource`，登录态通过 `/api/sse/registry` 补绑，断线后 5 秒重连
 
 **界面与构建**
 
-- UnoCSS 用 `presetWind4` 预设，配合 SCSS 设计令牌 [`core/theme/base-theme.scss`](src/core/theme/base-theme.scss)；Element Plus 只作控件层
+- UnoCSS 使用 `presetWind4` 预设，配合 SCSS 设计令牌 [`core/theme/base-theme.scss`](src/core/theme/base-theme.scss)；Element Plus 仅作为控件层
 - Element Plus 组件由 `unplugin-vue-components` 按需解析；构建按 `vue` / `element-plus` / `vendor` 三组切分
-- 资源路径不写死：`@` 指向 `src`，静态资源前缀由 `settings.viteBasePath` 与 `window.NGINX_BASE_URL` 决定
+- 资源路径不做硬编码：`@` 指向 `src`，静态资源前缀由 `settings.viteBasePath` 与 `window.NGINX_BASE_URL` 决定
 - 构建信息包含版本、提交号与构建时间，由后端 `viteJar` 注入，登录页与调试面板直接展示
 
 ## 技术栈
@@ -53,7 +53,7 @@ Vue 3 单页应用 —— 与 [lolosia-backend](https://github.com/lolosiax/lolo
 | 类别 | 选型 |
 | --- | --- |
 | 框架 | Vue 3.5.44，`<script setup>` + TypeScript strict |
-| 构建 | Vite 8.3.5，生产构建按依赖分组切 chunk |
+| 构建 | Vite 8.3.5，生产构建按依赖分组拆分 chunk |
 | 语言 | TypeScript 5.9.3 + vue-tsc |
 | 路由 | vue-router 4.6.4，HTML5 history，base 为 `/home/` |
 | 状态 | Pinia 4.1.0 + pinia-plugin-persistedstate |
@@ -79,7 +79,7 @@ src/
 │   ├── stores/               # auth / layout / debug / route-cache
 │   ├── styles/ theme/ ui/    # 全局样式、设计令牌、基础组件：AppPage / LiquidBox / SvgIcon …
 │   └── pages/error/          # 401 / 404 / 500
-├── modules/                  # 按功能域拆分，每域自带 pages / components / composables / api
+├── modules/                  # 按功能域拆分，各域包含 pages / components / composables / api
 │   ├── site/                 # 入口页与个人主页：Hero 场景、照片墙、门户卡片
 │   ├── auth/                 # 登录 / 注册
 │   ├── dashboard/            # 仪表板：指标、热力、推荐、最近动态
@@ -98,7 +98,7 @@ src/
 ### 环境
 
 - Node ≥ 22
-- pnpm 10.17.0；`corepack enable` 会自动读取 `packageManager`
+- pnpm 10.17.0；执行 `corepack enable` 后将自动读取 `packageManager`
 
 ### 本地开发
 
@@ -107,25 +107,25 @@ pnpm install
 pnpm dev        # http://localhost:5005
 ```
 
-`pnpm dev` 走 `.env.serve-dev`：`VITE_APP_BASE_MODE=port`、`VITE_APP_BASE_PORT=7129`，也就是前端 5005 直连本机后端 7129。后端按自己的文档启动，命令是 `gradlew runDebug`。
+`pnpm dev` 使用 `.env.serve-dev`：`VITE_APP_BASE_MODE=port`、`VITE_APP_BASE_PORT=7129`，即前端 5005 直连本机后端 7129。后端按其文档启动，命令为 `gradlew runDebug`。
 
 ### 构建与校验
 
 ```bash
-pnpm build       # 产物在 dist/，mode=build
-pnpm preview     # 本地预览产物，http://localhost:5006
-pnpm verify      # eslint + eslint hard + vue-tsc，提交前跑这个
+pnpm build       # 产物输出至 dist/，mode=build
+pnpm preview     # 本地预览构建产物，http://localhost:5006
+pnpm verify      # eslint + eslint hard + vue-tsc，提交前执行
 pnpm format      # prettier --write
 ```
 
 ### 与后端一起打包
 
-后端 [`platforms.json`](https://github.com/lolosiax/lolosia-backend) 的 `webPath` 指向本目录后，`viteJar` 会执行构建并把 `dist/` 并进 `classpath.zip`。注意两处必须一致：
+后端 [`platforms.json`](https://github.com/lolosiax/lolosia-backend) 的 `webPath` 指向本目录后，`viteJar` 将执行构建并将 `dist/` 合并至 `classpath.zip`。以下两处必须保持一致：
 
 - 本仓库 [`src/core/config/settings.ts`](src/core/config/settings.ts) 的 `viteBasePath`，默认 `/home/`
 - 后端 vite 配置的 `contextPath`
 
-改了一边不改另一边，路由与静态资源都会 404。
+只修改其中一侧会导致路由与静态资源返回 404。
 
 ## 路由与模块
 
@@ -142,40 +142,40 @@ pnpm format      # prettier --write
 | `/profile` | 个人中心，从头像进入，不占侧栏 | 登录用户 |
 | `/401` `/404` `/500` | 错误页 | 所有人 |
 
-新增页面 = 在 `modules/<域>/` 下写页面 + `routes.ts` 导出路由，再到 [`src/router.ts`](src/router.ts) 里拼进 `menuRoutes`；隐藏页面加 `meta.hidden`，需要缓存加 `meta.cachePage`。
+新增页面的步骤：在 `modules/<域>/` 下编写页面，并由 `routes.ts` 导出路由；随后在 [`src/router.ts`](src/router.ts) 中加入 `menuRoutes`。隐藏页面添加 `meta.hidden`，需要缓存则添加 `meta.cachePage`。
 
 ## 环境变量
 
 | 变量 | 作用 |
 | --- | --- |
 | `VITE_APP_ENV` | `dev` / `prod`，`isProd` 据此判断 |
-| `VITE_APP_BASE_MODE` | 后端地址来源：`local` 同源，默认；`port` 指定端口；`url` 指定完整地址 |
+| `VITE_APP_BASE_MODE` | 后端地址来源：`local` 同源，为默认值；`port` 指定端口；`url` 指定完整地址 |
 | `VITE_APP_BASE_PORT` | `port` 模式下的后端端口 |
 | `VITE_APP_BASE_URL` | `url` 模式下的后端根地址 |
 | `VITE_AMAP_KEY` | 高德 JS API 的 Web 端 key，用于足迹地图 |
 | `VITE_AMAP_SECURITY_CODE` | 高德安全密钥 |
 
-地址优先级：`window.NGINX_BASE_URL` 由反向代理注入，优先级最高；其次看 `VITE_APP_BASE_MODE` 配置；最后落到当前页面 origin。
-`.env.build` / `.env.serve-dev` 只放占位值，真实 key 不要提交。
+地址优先级：`window.NGINX_BASE_URL` 由反向代理注入，优先级最高；其次为 `VITE_APP_BASE_MODE` 配置；最后回退至当前页面 origin。
+`.env.build` 与 `.env.serve-dev` 仅存放占位值，真实 key 不应提交。
 
 ## 接口约定
 
-- 所有请求都落在 `{root}/api/`，响应是 `{code,msg,data}`；成功码 `0` / `200` / `20000`，其余按失败处理
-- 鉴权头 `Authorization: Bearer <sessionId>`，登录返回的 `data.Authorization` 即会话 id
-- `401` / `403` 一律清会话并回登录页，即 `auth.reset()` 加 `redirect`
-- 头像走 `<img src>` 直连 `/api/user/avatar/get/{id}`；文件缩略图与原图由后端下发带 `exp` + `sig` 的签名直链
-- SSE 事件名如 `anime.release`，订阅入口在 [`core/lib/sse.ts`](src/core/lib/sse.ts) 的 `onSseEvent`
-- 权限串判定在 [`core/lib/permission.ts`](src/core/lib/permission.ts)，与后端同语义：`a.b.c` 允许、`-a.b.c` 拒绝、`a.b.*` 前缀通配、`*` 全部，负号优先
+- 所有请求均位于 `{root}/api/`，响应格式为 `{code,msg,data}`；成功码为 `0` / `200` / `20000`，其余按失败处理
+- 鉴权头为 `Authorization: Bearer <sessionId>`，登录返回的 `data.Authorization` 即会话 id
+- `401` / `403` 一律清除会话并返回登录页，即调用 `auth.reset()` 并附加 `redirect`
+- 头像通过 `<img src>` 直连 `/api/user/avatar/get/{id}`；文件缩略图与原图由后端下发带 `exp` + `sig` 的签名直链
+- SSE 事件名如 `anime.release`，订阅入口位于 [`core/lib/sse.ts`](src/core/lib/sse.ts) 的 `onSseEvent`
+- 权限串判定位于 [`core/lib/permission.ts`](src/core/lib/permission.ts)，与后端语义一致：`a.b.c` 允许、`-a.b.c` 拒绝、`a.b.*` 前缀通配、`*` 全部，负号优先
 
 ## 部署
 
-默认不单独托管：`pnpm build` 的产物由后端 `viteJar` 打进二进制，访问 `http://<host>:7129/home/`。
+默认不单独部署：`pnpm build` 的产物由后端 `viteJar` 打包至二进制，访问地址为 `http://<host>:7129/home/`。
 
-如果要把前端单独放到 Nginx：
+如需将前端单独部署至 Nginx：
 
-- `base` 与后端保持一致，都是 `/home/`；history 回退交给 Nginx `try_files`
-- 页面里注入 `window.NGINX_BASE_URL` 指定 API 根地址，或改用 `VITE_APP_BASE_URL` 的 `url` 模式
-- 跨域时后端要放行对应 Origin；同域反代最省事，把 `/api` 转发到 7129
+- `base` 与后端保持一致，均为 `/home/`；history 回退交由 Nginx 的 `try_files` 处理
+- 在页面中注入 `window.NGINX_BASE_URL` 以指定 API 根地址，或改用 `VITE_APP_BASE_URL` 的 `url` 模式
+- 跨域时后端需放行对应 Origin；同域反向代理最为简便，将 `/api` 转发至 7129
 
 ## 延伸阅读
 
