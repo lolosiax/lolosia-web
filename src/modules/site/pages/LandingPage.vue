@@ -1,155 +1,146 @@
 <script setup lang="ts">
-// 入口页：左侧欢迎语，右侧斜切卡片网格。
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { PORTAL_CARDS } from '../lib'
-import type { PortalCard } from '../lib'
-import PortalBackground from '../components/portal/PortalBackground.vue'
-import PortalCardView from '../components/portal/PortalCard.vue'
-import PortalIntro from '../components/portal/PortalIntro.vue'
+import { ref, watch } from 'vue'
+import LandingBackdrop from '../components/landing/LandingBackdrop.vue'
+import LandingCardGrid from '../components/landing/LandingCardGrid.vue'
+import LandingIntro from '../components/landing/LandingIntro.vue'
+import { useLandingCards } from '../composables/use-landing-cards'
+import type { LandingCard } from '../composables/use-landing-cards'
 
 defineOptions({ name: 'LandingPage' })
 
-const router = useRouter()
-const smallCards = computed(() => PORTAL_CARDS.filter(card => !card.large))
-const largeCard = computed(() => PORTAL_CARDS.find(card => card.large))
+const { leftCards, largeCard, open } = useLandingCards()
 
-function open(card: PortalCard): void {
-  void router.push(card.path)
+const hoveringImage = ref<string>()
+const hoveringImage0 = ref<string>()
+
+// 渐隐期间继续用上一张图，避免背景突然消失
+watch(hoveringImage, image => {
+  if (image) hoveringImage0.value = image
+})
+
+function handleHover(image?: string): void {
+  hoveringImage.value = image
+}
+
+function handleOpen(card: LandingCard, event: MouseEvent): void {
+  open(card, event)
 }
 </script>
 
 <template>
-  <div class="portal">
-    <PortalBackground />
+  <div class="portal-page">
+    <LandingBackdrop />
 
-    <section class="portal__intro">
-      <PortalIntro :items="PORTAL_CARDS" />
-    </section>
+    <div class="content-wrapper">
+      <!-- Hover fullscreen background overlay -->
+      <Transition name="hover-bg">
+        <div v-if="hoveringImage" class="hover-bg-overlay" :style="{ backgroundImage: `url(${hoveringImage0})` }" />
+      </Transition>
 
-    <section class="portal__stage">
-      <div class="portal__col">
-        <PortalCardView v-for="card in smallCards" :key="card.id" :card="card" @open="open" />
+      <!-- ===== Left Panel ===== -->
+      <LandingIntro :cards="leftCards" />
+
+      <!-- ===== Right Panel: Slanted Parallelogram Grid ===== -->
+      <LandingCardGrid :cards="leftCards" :large-card="largeCard" @open="handleOpen" @hover="handleHover" />
+
+      <div class="copyright-bar">
+        <span>© 2026 Lolosia. All rights reserved.</span>
       </div>
-      <div class="portal__col portal__col--large">
-        <PortalCardView v-if="largeCard" :card="largeCard" @open="open" />
-      </div>
-    </section>
-
-    <footer class="portal__copy">© 2026 Lolosia. All rights reserved.</footer>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.portal {
+$text-dark: #2d1b3a;
+$text-muted: #8a7a94;
+$bg-light: #faf5ff;
+
+.portal-page {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 40px;
-  width: 100%;
+  width: 100vw;
   height: 100vh;
-  height: 100dvh;
-  padding: 0 6vw;
   overflow: hidden;
-  color: #2d1b3a;
-  background: #faf5ff;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: $bg-light;
+  color: $text-dark;
+}
 
-  &__intro {
-    position: relative;
-    z-index: 1;
-    flex: 0 0 38%;
-    display: flex;
-    justify-content: center;
+.content-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+// Hover fullscreen overlay
+.hover-bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+// 版权行独立于左右面板，桌面端固定左下角，移动端自然排在页面末尾
+.copyright-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 50px;
+  z-index: 2;
+  font-size: 11px;
+  color: rgba($text-muted, 0.4);
+  letter-spacing: 0.5px;
+}
+
+.hover-bg-enter-active,
+.hover-bg-leave-active {
+  transition: opacity 0.8s ease;
+}
+
+.hover-bg-enter-from,
+.hover-bg-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 1024px) {
+  .portal-page {
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    // 只裁剪装饰 blob，页面滚动交给文档本身，避免出现内层滚动条占宽
+    overflow: hidden;
   }
 
-  &__stage {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    flex: 1;
-    grid-template-columns: 1fr 1.15fr;
-    gap: 16px;
-    height: min(620px, 76vh);
-    transform: skewX(-5deg);
-  }
-
-  &__col {
+  .content-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    min-width: 0;
-
-    &--large {
-      height: 100%;
-    }
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
-  &__copy {
-    position: absolute;
-    bottom: 18px;
-    left: 6vw;
-    z-index: 1;
-    color: rgba(138, 122, 148, 0.5);
-    font-size: 11px;
-    letter-spacing: 0.5px;
+  .copyright-bar {
+    position: static;
+    left: auto;
+    bottom: auto;
+    margin-top: auto;
+    padding: 20px 32px 28px;
+    text-align: center;
   }
 }
 
-@media (max-width: 1100px) {
-  .portal {
-    gap: 20px;
-    padding: 0 4vw;
-
-    &__intro {
-      flex-basis: 44%;
-    }
-
-    &__stage {
-      height: min(540px, 70vh);
-    }
+@media (max-width: 768px) {
+  .copyright-bar {
+    padding: 12px 20px 22px;
+    font-size: 10px;
   }
-}
 
-@media (max-width: 820px) {
-  .portal {
-    flex-direction: column;
-    gap: 24px;
-    justify-content: flex-start;
-    height: 100vh;
-    height: 100dvh;
-    padding: 32px 20px 40px;
-    overflow-x: hidden;
-    overflow-y: auto;
-
-    &__intro {
-      flex: none;
-      width: 100%;
-    }
-
-    &__stage {
-      flex: none;
-      grid-template-columns: 1fr;
-      width: 100%;
-      height: auto;
-      min-height: 0;
-      gap: 12px;
-      transform: none;
-    }
-
-    &__col {
-      gap: 12px;
-
-      &--large {
-        height: auto;
-      }
-    }
-
-    &__copy {
-      position: static;
-      margin-top: auto;
-      padding-top: 8px;
-      text-align: center;
-    }
+  .hover-bg-overlay {
+    display: none;
   }
 }
 </style>

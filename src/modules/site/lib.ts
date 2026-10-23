@@ -1,58 +1,5 @@
 import { lunarToSolar } from 'lunar-calendar'
 
-/** 入口页的一张导航卡片。 */
-export interface PortalCard {
-  id: number
-  title: string
-  subtitle: string
-  description: string
-  icon: string
-  path: string
-  /** `r, g, b`，卡片主题色。 */
-  tone: string
-  large?: boolean
-}
-
-export const PORTAL_CARDS: PortalCard[] = [
-  {
-    id: 1,
-    title: '控制台',
-    subtitle: 'Console',
-    description: '仪表盘、系统状态与最近动态',
-    icon: 'speedometer2',
-    path: '/dashboard',
-    tone: '125, 142, 209'
-  },
-  {
-    id: 2,
-    title: '文件库',
-    subtitle: 'Library',
-    description: '照片、视频与标签检索',
-    icon: 'folder2-open',
-    path: '/files',
-    tone: '229, 166, 239'
-  },
-  {
-    id: 3,
-    title: '番组表',
-    subtitle: 'Anime',
-    description: '追番日历与发布提醒',
-    icon: 'calendar2-week',
-    path: '/anime',
-    tone: '79, 172, 254'
-  },
-  {
-    id: 4,
-    title: '洛洛希雅',
-    subtitle: 'Lolosia',
-    description: '虚拟偶像个人主页 · 进入梦幻世界',
-    icon: 'heart-fill',
-    path: '/lolosia',
-    tone: '194, 150, 205',
-    large: true
-  }
-]
-
 /** 主角资料。 */
 export const HERO_SECTIONS = [
   { id: 'hero', label: '首页' },
