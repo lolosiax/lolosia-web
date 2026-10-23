@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import LandingBackdrop from '../components/landing/LandingBackdrop.vue'
 import LandingCardGrid from '../components/landing/LandingCardGrid.vue'
 import LandingIntro from '../components/landing/LandingIntro.vue'
+import RouteSwitcher from '../components/shared/RouteSwitcher.vue'
 import { useLandingCards } from '../composables/use-landing-cards'
 import type { LandingCard } from '../composables/use-landing-cards'
 
@@ -30,6 +31,7 @@ function handleOpen(card: LandingCard, event: MouseEvent): void {
 <template>
   <div class="portal-page">
     <LandingBackdrop />
+    <RouteSwitcher />
 
     <div class="content-wrapper">
       <!-- Hover fullscreen background overlay -->

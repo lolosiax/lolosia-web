@@ -7,6 +7,7 @@ defineOptions({ name: 'RouteSwitcher' })
 <template>
   <nav class="route-switcher">
     <RouterLink class="route-switcher__link" to="/">基础页</RouterLink>
+    <RouterLink class="route-switcher__link" to="/landing">完整动效页</RouterLink>
     <RouterLink class="route-switcher__link" to="/lab">GPU 测试页</RouterLink>
   </nav>
 </template>
