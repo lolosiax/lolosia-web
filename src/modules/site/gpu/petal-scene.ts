@@ -1,18 +1,22 @@
 import {
+  AmbientLight,
   BufferGeometry,
   Color,
+  DirectionalLight,
   Float32BufferAttribute,
+  Fog,
   PerspectiveCamera,
-  Plane,
   Points,
   PointsMaterial,
-  Raycaster,
   Scene,
   Timer,
   Vector2,
   Vector3,
   WebGLRenderer
 } from 'three'
+import { createTree, disposeTree } from '../scenery/tree'
+import { createCharacter } from '../character/character'
+import type { CharacterHandle } from '../character/character'
 import { createPetalField } from './petal-field'
 import { createWaterSurface } from './water-surface'
 
@@ -61,6 +65,7 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
   renderer.setClearColor(0x000000, 0)
 
   const scene = new Scene()
+  scene.fog = new Fog(0xe9e0f3, 10, 40)
   const camera = new PerspectiveCamera(40, 1, 0.1, 80)
   camera.position.set(0, BASE_Y, 4.2)
   camera.lookAt(0, -0.4, 0)
@@ -71,13 +76,38 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
   const dust = createDust()
   scene.add(water.mesh, petals.mesh, dust)
 
+  const tree = createTree()
+  tree.position.set(-11.8, WATER_Y, -19.5)
+  tree.scale.setScalar(1.55)
+  scene.add(tree)
+
+  scene.add(new AmbientLight(0xffffff, 0.55))
+  const key = new DirectionalLight(0xfff1f8, 1.9)
+  key.position.set(-2.5, 4, 3.5)
+  scene.add(key)
+
+  let character: CharacterHandle | null = null
+  const avatarUrl = import.meta.env.VITE_APP_AVATAR_URL ?? `${import.meta.env.BASE_URL}res/characters/moe/Moe.glb`
+  void createCharacter(scene, avatarUrl)
+    .then(handle => {
+      if (disposed) {
+        handle.dispose()
+        return
+      }
+      character = handle
+      lastPosition.copy(handle.position)
+    })
+    .catch(err => {
+      console.warn('角色载入失败', err)
+    })
+
   const timer = new Timer()
   timer.connect(document)
   const pointer = new Vector2()
-  const raycaster = new Raycaster()
-  const waterPlane = new Plane(new Vector3(0, 1, 0), -WATER_Y)
-  const hit = new Vector3()
   const target = { x: 0, y: BASE_Y }
+  const lastPosition = new Vector3()
+  let stepDistance = 0
+  let stepFoot = 0
 
   let frameId = 0
   let disposed = false
@@ -99,6 +129,17 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
 
     petals.update(elapsed, delta)
     water.update(elapsed)
+    if (character) {
+      character.update(delta, elapsed, WATER_Y)
+      stepDistance += character.position.distanceTo(lastPosition)
+      lastPosition.copy(character.position)
+      if (character.state === 'walk' && stepDistance > 0.16) {
+        stepDistance = 0
+        const foot = character.feet[stepFoot % 2]
+        stepFoot += 1
+        if (foot) water.emitRipple(foot.x, foot.z, 0.9)
+      }
+    }
     render()
     frameId = window.requestAnimationFrame(frame)
   }
@@ -132,11 +173,6 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
     pointer.set((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1)
     target.x = pointer.x * 0.22
     target.y = BASE_Y + pointer.y * 0.16
-
-    raycaster.setFromCamera(pointer, camera)
-    if (raycaster.ray.intersectPlane(waterPlane, hit)) {
-      water.setPointer(hit.x, hit.z)
-    }
   }
 
   function dispose(): void {
@@ -144,6 +180,9 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
     stop()
     document.removeEventListener('visibilitychange', onVisibility)
     timer.dispose()
+    character?.dispose()
+    character = null
+    disposeTree(tree)
     water.dispose()
     petals.dispose()
     dust.geometry.dispose()

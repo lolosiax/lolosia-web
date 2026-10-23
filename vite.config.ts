@@ -43,10 +43,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': pathSrc
-    }
+    },
+    dedupe: ['three']
   },
   optimizeDeps: {
-    include: ['moment-mini']
+    include: ['moment-mini', 'three', 'three/addons/loaders/GLTFLoader.js']
   },
   build: {
     assetsDir: 'static/assets',

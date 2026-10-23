@@ -1,4 +1,6 @@
-import { Mesh, PlaneGeometry, ShaderMaterial, Vector2, Vector3 } from 'three'
+import { Mesh, PlaneGeometry, ShaderMaterial, Vector3, Vector4 } from 'three'
+
+const RIPPLE_SLOTS = 3
 
 const VERTEX = /* glsl */ `
   uniform float uTime;
@@ -19,7 +21,7 @@ const VERTEX = /* glsl */ `
 
 const FRAGMENT = /* glsl */ `
   uniform float uTime;
-  uniform vec2 uPointer;
+  uniform vec4 uRipples[3];
   uniform vec3 uDeep;
   uniform vec3 uPale;
   uniform vec3 uSky;
@@ -31,9 +33,23 @@ const FRAGMENT = /* glsl */ `
     h += sin(p.y * 2.3 - uTime * 0.6) * 0.35;
     h += sin((p.x * 0.7 + p.y * 1.1) * 2.4 + uTime * 1.1) * 0.22;
     h += sin((p.x - p.y) * 3.7 - uTime * 0.9) * 0.12;
-    float d = distance(p, uPointer);
-    h += sin(d * 4.0 - uTime * 2.0) * exp(-d * 1.1) * 0.45;
     return h;
+  }
+
+  vec2 rippleGradient(vec2 p) {
+    vec2 grad = vec2(0.0);
+    for (int i = 0; i < 3; i++) {
+      vec4 r = uRipples[i];
+      float age = uTime - r.z;
+      if (r.w <= 0.001 || age < 0.0 || age > 2.2) continue;
+      vec2 delta = p - r.xy;
+      float d = max(length(delta), 0.001);
+      float band = d - age * 1.25;
+      float envelope = exp(-abs(band) * 4.5) * exp(-age * 1.4) * r.w;
+      float slope = cos(band * 9.0) * 9.0 - sin(band * 9.0) * 4.5 * sign(band);
+      grad += (delta / d) * slope * envelope * 0.05;
+    }
+    return grad;
   }
 
   void main() {
@@ -42,7 +58,8 @@ const FRAGMENT = /* glsl */ `
     float h = wave(p);
     float hx = wave(p + vec2(step, 0.0));
     float hz = wave(p + vec2(0.0, step));
-    vec3 normal = normalize(vec3((h - hx) * 3.0, 1.0, (h - hz) * 3.0));
+    vec2 rip = rippleGradient(p);
+    vec3 normal = normalize(vec3((h - hx) * 3.0 - rip.x, 1.0, (h - hz) * 3.0 - rip.y));
 
     vec3 viewDir = normalize(vView);
     float fresnel = pow(1.0 - clamp(dot(normal, viewDir), 0.0, 1.0), 2.0);
@@ -54,6 +71,7 @@ const FRAGMENT = /* glsl */ `
     vec3 color = mix(uDeep, uPale, clamp(fresnel * 0.72 + slope * 0.16, 0.0, 1.0));
     color = mix(color, uSky, fresnel * 0.2);
     color += vec3(1.0, 0.96, 1.0) * gloss * 0.5;
+    color += vec3(1.0, 0.97, 1.0) * clamp(length(rip) * 0.3, 0.0, 0.2);
 
     float sheen = sin(vWorld.x * 0.5 + uTime * 0.16) * 0.5 + 0.5;
     color += vec3(1.0, 0.92, 0.98) * sheen * 0.02;
@@ -75,13 +93,15 @@ export interface WaterSurfaceOptions {
 export function createWaterSurface(options: WaterSurfaceOptions) {
   const geometry = new PlaneGeometry(44, 44, 1, 1)
   const uTime = { value: 0 }
-  const uPointer = { value: new Vector2(0, 0) }
+  const uRipples = {
+    value: Array.from({ length: RIPPLE_SLOTS }, () => new Vector4(0, 0, -100, 0))
+  }
   const material = new ShaderMaterial({
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
     uniforms: {
       uTime,
-      uPointer,
+      uRipples,
       uDeep: { value: options.deep },
       uPale: { value: options.pale },
       uSky: { value: options.sky }
@@ -95,12 +115,17 @@ export function createWaterSurface(options: WaterSurfaceOptions) {
   mesh.position.y = -2
   mesh.renderOrder = 0
 
+  let rippleIndex = 0
+
   function update(elapsed: number): void {
     uTime.value = elapsed
   }
 
-  function setPointer(x: number, z: number): void {
-    uPointer.value.set(x, z)
+  /** 在世界坐标 x / z 处生成一圈涟漪。 */
+  function emitRipple(x: number, z: number, strength = 1): void {
+    const ripple = uRipples.value[rippleIndex]
+    rippleIndex = (rippleIndex + 1) % RIPPLE_SLOTS
+    ripple?.set(x * 0.8, z * 0.8, uTime.value, strength)
   }
 
   function dispose(): void {
@@ -108,5 +133,5 @@ export function createWaterSurface(options: WaterSurfaceOptions) {
     material.dispose()
   }
 
-  return { mesh, update, setPointer, dispose }
+  return { mesh, update, emitRipple, dispose }
 }

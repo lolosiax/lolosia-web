@@ -13,3 +13,6 @@ coverage
 /archive.zip
 /platform.json
 /ts-out-dir/
+
+# 角色模型体积大且非开源内容，运行时从服务器加载
+public/res/characters/
