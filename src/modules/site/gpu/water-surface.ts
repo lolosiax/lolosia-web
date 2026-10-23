@@ -1,32 +1,45 @@
-import { Mesh, PlaneGeometry, ShaderMaterial, Vector3, Vector4 } from 'three'
+import { DataTexture, Matrix4, Mesh, PlaneGeometry, RGBAFormat, ShaderMaterial, Texture, Vector2, Vector3, Vector4 } from 'three'
 
-const RIPPLE_SLOTS = 3
+/** 涟漪槽位：脚步、锦鲤起跳与入水的多圈涟漪共用。 */
+const RIPPLE_SLOTS = 6
+/** 角色周围这个半径内，全局波浪完全压平（单位：世界米）。 */
+const CALM_RADIUS = 2
 
 const VERTEX = /* glsl */ `
   uniform float uTime;
+  uniform vec2 uFocus;
+  uniform mat4 uReflectionMatrix;
   varying vec2 vWorld;
   varying vec3 vView;
+  varying vec4 vReflect;
 
   void main() {
     vec3 p = position;
-    p.z += sin(p.x * 0.9 + uTime * 0.7) * 0.035;
-    p.z += sin(p.y * 1.3 - uTime * 0.55) * 0.028;
-
     vec4 world = modelMatrix * vec4(p, 1.0);
+    float damp = smoothstep(0.0, ${CALM_RADIUS.toFixed(1)}, distance(world.xz, uFocus));
+    p.z += sin(p.x * 0.9 + uTime * 0.7) * 0.035 * damp;
+    p.z += sin(p.y * 1.3 - uTime * 0.55) * 0.028 * damp;
+
+    world = modelMatrix * vec4(p, 1.0);
     vWorld = world.xz;
     vView = normalize(cameraPosition - world.xyz);
+    vReflect = uReflectionMatrix * world;
     gl_Position = projectionMatrix * viewMatrix * world;
   }
 `
 
 const FRAGMENT = /* glsl */ `
   uniform float uTime;
-  uniform vec4 uRipples[3];
+  uniform float uReflectEnabled;
+  uniform vec2 uFocus;
+  uniform vec4 uRipples[${RIPPLE_SLOTS}];
+  uniform sampler2D uReflection;
   uniform vec3 uDeep;
   uniform vec3 uPale;
   uniform vec3 uSky;
   varying vec2 vWorld;
   varying vec3 vView;
+  varying vec4 vReflect;
 
   float wave(vec2 p) {
     float h = sin(p.x * 1.6 + uTime * 0.8) * 0.45;
@@ -38,7 +51,7 @@ const FRAGMENT = /* glsl */ `
 
   vec2 rippleGradient(vec2 p) {
     vec2 grad = vec2(0.0);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < ${RIPPLE_SLOTS}; i++) {
       vec4 r = uRipples[i];
       float age = uTime - r.z;
       if (r.w <= 0.001 || age < 0.0 || age > 2.2) continue;
@@ -54,10 +67,12 @@ const FRAGMENT = /* glsl */ `
 
   void main() {
     vec2 p = vWorld * 0.8;
+    // 角色脚下 2 米内压平全局波浪，只保留脚步涟漪。
+    float damp = smoothstep(0.0, ${CALM_RADIUS.toFixed(1)}, distance(vWorld, uFocus));
     float step = 0.04;
-    float h = wave(p);
-    float hx = wave(p + vec2(step, 0.0));
-    float hz = wave(p + vec2(0.0, step));
+    float h = wave(p) * damp;
+    float hx = wave(p + vec2(step, 0.0)) * damp;
+    float hz = wave(p + vec2(0.0, step)) * damp;
     vec2 rip = rippleGradient(p);
     vec3 normal = normalize(vec3((h - hx) * 3.0 - rip.x, 1.0, (h - hz) * 3.0 - rip.y));
 
@@ -75,6 +90,16 @@ const FRAGMENT = /* glsl */ `
 
     float sheen = sin(vWorld.x * 0.5 + uTime * 0.16) * 0.5 + 0.5;
     color += vec3(1.0, 0.92, 0.98) * sheen * 0.02;
+
+    // 平面反射：采样镜像相机的画面，用涟漪梯度扰动，再按菲涅尔淡入。
+    vec2 ruv = vReflect.xy / max(vReflect.w, 0.0001);
+    ruv += rip * 0.12 + vec2(sin(vWorld.y * 4.2 + uTime * 0.6), cos(vWorld.x * 3.6 - uTime * 0.5)) * 0.0018;
+    vec4 mirror = texture2D(uReflection, clamp(ruv, vec2(0.001), vec2(0.999)));
+    vec3 mirrored = mix(mirror.rgb, uSky, 0.28);
+    // 远处物体的倒影在雾里几乎看不见，衰减掉可以避免树影出现硬边。
+    float mirrorFade = 1.0 - smoothstep(8.0, 20.0, length(vWorld));
+    float mirrorAmount = mirror.a * (0.15 + fresnel * 0.22) * mirrorFade * uReflectEnabled;
+    color = mix(color, mirrored, mirrorAmount);
 
     float distanceFade = smoothstep(28.0, 6.0, length(vWorld));
     color = mix(uSky, color, clamp(distanceFade, 0.0, 1.0));
@@ -96,15 +121,25 @@ export function createWaterSurface(options: WaterSurfaceOptions) {
   const uRipples = {
     value: Array.from({ length: RIPPLE_SLOTS }, () => new Vector4(0, 0, -100, 0))
   }
+  const blankReflection = new DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, RGBAFormat)
+  blankReflection.needsUpdate = true
+  const uReflection = { value: blankReflection as Texture }
+  const uReflectionMatrix = { value: new Matrix4() }
+  const uReflectEnabled = { value: 0 }
+  const uFocus = { value: new Vector2(9999, 9999) }
   const material = new ShaderMaterial({
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
     uniforms: {
       uTime,
       uRipples,
+      uFocus,
       uDeep: { value: options.deep },
       uPale: { value: options.pale },
-      uSky: { value: options.sky }
+      uSky: { value: options.sky },
+      uReflection,
+      uReflectionMatrix,
+      uReflectEnabled
     }
   })
   material.name = 'water'
@@ -121,6 +156,18 @@ export function createWaterSurface(options: WaterSurfaceOptions) {
     uTime.value = elapsed
   }
 
+  /** 传入镜像相机渲染的画面和投影矩阵，开启水面反射。 */
+  function setReflection(texture: Texture, matrix: Matrix4): void {
+    uReflection.value = texture
+    uReflectionMatrix.value.copy(matrix)
+    uReflectEnabled.value = 1
+  }
+
+  /** 设置“静水区”中心（角色脚下），其周围 CALM_RADIUS 内全局波浪压到 0。 */
+  function setFocus(x: number, z: number): void {
+    uFocus.value.set(x, z)
+  }
+
   /** 在世界坐标 x / z 处生成一圈涟漪。 */
   function emitRipple(x: number, z: number, strength = 1): void {
     const ripple = uRipples.value[rippleIndex]
@@ -131,7 +178,8 @@ export function createWaterSurface(options: WaterSurfaceOptions) {
   function dispose(): void {
     geometry.dispose()
     material.dispose()
+    blankReflection.dispose()
   }
 
-  return { mesh, update, emitRipple, dispose }
+  return { mesh, update, emitRipple, setReflection, setFocus, dispose }
 }

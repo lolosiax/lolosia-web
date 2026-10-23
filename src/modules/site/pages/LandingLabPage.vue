@@ -15,7 +15,7 @@ const { status, error } = usePetalScene(canvas)
 const cards = computed(() => (largeCard.value ? [...leftCards.value, largeCard.value] : leftCards.value))
 
 const statusText = computed(() => {
-  if (status.value === 'ready') return 'three.js · WebGL2 · 50 片实例化花瓣 · 实时水面涟漪'
+  if (status.value === 'ready') return 'three.js · WebGL2 · 50 片实例化花瓣 · 锦鲤跃水 · 实时水面涟漪'
   if (status.value === 'unsupported') return '当前环境不支持 WebGL，已回退为静态背景'
   return '场景初始化中…'
 })

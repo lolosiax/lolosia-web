@@ -15,6 +15,7 @@ import {
 } from 'three'
 import type { Material } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { useSiteSceneStore } from '../store'
 
 const TARGET_HEIGHT = 1.15
 const WALK_SPEED = 0.36
@@ -22,6 +23,8 @@ const IDLE_MIN = 1.2
 const IDLE_MAX = 3.6
 const BOUNDS = { xMin: -2, xMax: 1.2, zNear: -0.6, zFar: -2 }
 const ARM_DROP = 1.05
+/** 落点写回 Pinia 的间隔（秒）。每帧写会在 localStorage 上打出大量小写入。 */
+const POSE_SAVE_INTERVAL = 1.5
 
 export type CharacterState = 'idle' | 'walk'
 
@@ -45,6 +48,10 @@ type Rig = Record<'leftLeg' | 'rightLeg' | 'leftKnee' | 'rightKnee' | 'leftArm' 
 
 function between(min: number, max: number): number {
   return min + Math.random() * (max - min)
+}
+
+function insideBounds(x: number, z: number): boolean {
+  return x >= BOUNDS.xMin && x <= BOUNDS.xMax && z >= BOUNDS.zFar && z <= BOUNDS.zNear
 }
 
 function findBone(root: Group, name: string): Object3D | null {
@@ -169,6 +176,9 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
   const model = gltf.scene
   const box = new Box3().setFromObject(model)
   model.scale.setScalar(TARGET_HEIGHT / Math.max(box.max.y - box.min.y, 0.001))
+  // 把最低点对齐到 root 原点，避免鞋底离水面浮空。
+  const scaledBox = new Box3().setFromObject(model)
+  model.position.y -= scaledBox.min.y
   applyToonShader(model)
 
   const root = new Group()
@@ -183,15 +193,26 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
   const rightFootPos = new Vector3()
   const feet = [leftFootPos, rightFootPos]
 
-  const position = new Vector3(between(-1.2, 0.4), 0, between(BOUNDS.zFar + 0.4, BOUNDS.zNear - 0.3))
+  const store = useSiteSceneStore()
+  const saved = store.characterPose
+  // 刷新后从上次离开的位置继续，而不是每次回到出生点。
+  const resume = saved && insideBounds(saved.x, saved.z) ? saved : null
+  const position = resume
+    ? new Vector3(resume.x, 0, resume.z)
+    : new Vector3(between(-1.2, 0.4), 0, between(BOUNDS.zFar + 0.4, BOUNDS.zNear - 0.3))
   const target = new Vector3().copy(position)
   const forward = new Vector3()
-  const tempDir = new Vector3()
   let state: CharacterState = 'idle'
   let idleFor = between(0.6, 1.8)
-  let yaw = 0
+  let yaw = resume ? resume.yaw : 0
   let phase = 0
   let gait = 0
+  let saveTimer = 0
+  const yawAxis = new Vector3(0, 1, 0)
+
+  function persistPose(): void {
+    store.saveCharacterPose({ x: position.x, z: position.z, yaw })
+  }
 
   function pickTarget(): void {
     target.set(between(BOUNDS.xMin, BOUNDS.xMax), 0, between(BOUNDS.zFar, BOUNDS.zNear))
@@ -242,17 +263,23 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
     animate(delta, elapsed)
 
     const bob = state === 'walk' ? Math.abs(Math.sin(phase)) * 0.02 : Math.sin(elapsed * 1.4) * 0.007
-    tempDir.set(0, 1, 0)
     root.position.set(position.x, waterY + bob, position.z)
-    root.quaternion.setFromAxisAngle(tempDir, yaw)
+    root.quaternion.setFromAxisAngle(yawAxis, yaw)
     root.rotateZ(state === 'walk' ? Math.sin(phase) * 0.02 : 0)
     root.updateMatrixWorld(true)
 
     leftFoot?.getWorldPosition(leftFootPos)
     rightFoot?.getWorldPosition(rightFootPos)
+
+    saveTimer += delta
+    if (saveTimer >= POSE_SAVE_INTERVAL) {
+      saveTimer = 0
+      persistPose()
+    }
   }
 
   function dispose(): void {
+    persistPose()
     scene.remove(root)
     model.traverse(object => {
       const mesh = object as { geometry?: { dispose(): void }; material?: { dispose(): void } | Array<{ dispose(): void }> }

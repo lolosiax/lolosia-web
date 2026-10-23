@@ -16,7 +16,7 @@ import {
 } from 'three'
 
 const UP = new Vector3(0, 1, 0)
-const BARK = 0x6a5a72
+const BARK = 0x8d8098
 const LEAF = 0xe0ecc7
 const LEAF_FAR = 0xefe6f7
 const FOG_COLOR = new Color(0xe9e0f3)
@@ -175,8 +175,8 @@ function buildFoliage(anchors: Vector3[], random: () => number): Points {
   const material = new ShaderMaterial({
     uniforms: {
       uFogColor: { value: FOG_COLOR },
-      uFogNear: { value: 10 },
-      uFogFar: { value: 40 }
+      uFogNear: { value: 8 },
+      uFogFar: { value: 32 }
     },
     vertexShader: /* glsl */ `
       attribute vec3 aColor;
@@ -202,9 +202,9 @@ function buildFoliage(anchors: Vector3[], random: () => number): Points {
       void main() {
         float d = length(gl_PointCoord - 0.5);
         if (d > 0.5) discard;
-        float alpha = smoothstep(0.5, 0.14, d) * 0.72;
-        vec3 color = mix(vColor, uFogColor, vFog * 0.85);
-        alpha *= 1.0 - vFog * 0.45;
+        float alpha = smoothstep(0.5, 0.14, d) * 0.62;
+        vec3 color = mix(vColor, uFogColor, vFog * 0.95);
+        alpha *= 1.0 - vFog * 0.55;
         gl_FragColor = vec4(color, alpha);
       }
     `,
