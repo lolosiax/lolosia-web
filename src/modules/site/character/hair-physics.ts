@@ -97,6 +97,8 @@ const CHAIN_SPECS: ChainEntry[] = [
     spec: spec({
       pull: 0.05,
       spring: 0.9,
+      gravity: 0,
+      gravityFalloff: 0,
       radius: 0.05,
       maxAngleX: 60,
       curves: {
@@ -112,6 +114,8 @@ const CHAIN_SPECS: ChainEntry[] = [
     spec: spec({
       pull: 0.05,
       spring: 0.9,
+      gravity: 0,
+      gravityFalloff: 0,
       radius: 0.05,
       maxAngleX: 60,
       curves: {
@@ -128,6 +132,8 @@ const CHAIN_SPECS: ChainEntry[] = [
       pull: 0.65,
       spring: 0.8,
       stiffness: 0,
+      gravity: 0,
+      gravityFalloff: 0,
       radius: 0.04,
       limit: 'polar',
       maxAngleX: 15,
@@ -162,6 +168,8 @@ const CHAIN_SPECS: ChainEntry[] = [
       pull: 0.65,
       spring: 0.8,
       stiffness: 0,
+      gravity: 0,
+      gravityFalloff: 0,
       radius: 0.04,
       limit: 'polar',
       maxAngleX: 15,
