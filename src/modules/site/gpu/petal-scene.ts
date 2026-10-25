@@ -13,6 +13,7 @@ import {
   Vector3,
   WebGLRenderer
 } from 'three'
+import { getRoot } from '@/core/lib/http'
 import { createTree, disposeTree } from '../scenery/tree'
 import { createCharacter } from '../character/character'
 import type { CharacterHandle, CharacterMode } from '../character/character'
@@ -200,7 +201,9 @@ export function createPetalScene(canvas: HTMLCanvasElement, options: PetalSceneO
 
   let character: CharacterHandle | null = null
   const footsteps = createFootsteps(water)
-  const avatarUrl = import.meta.env.VITE_APP_AVATAR_URL ?? `${import.meta.env.BASE_URL}res/characters/moe/Moe.glb`
+  // 模型不入库、也不打进 .exe：由后端 `/res/resources/**` 读 `<workDir>/resources/**` 下发。
+  // `VITE_APP_AVATAR_URL` 仍可整体覆盖（外链或 CDN）。
+  const avatarUrl = import.meta.env.VITE_APP_AVATAR_URL ?? `${getRoot()}/res/resources/characters/moe/Moe.glb`
   loadCharacter(
     scene,
     avatarUrl,
@@ -244,7 +247,8 @@ export function createPetalScene(canvas: HTMLCanvasElement, options: PetalSceneO
     water.update(elapsed)
     koi.update(delta, elapsed, character?.position ?? null)
     if (character) {
-      character.update(delta, elapsed, WATER_Y)
+      // 鱼腾空时才给角色一个注视目标；落水后自动交还给动画。
+      character.update(delta, elapsed, WATER_Y, koi.leaping ? koi.position : null)
       footsteps.update(character)
       water.setFocus(character.position.x, character.position.z)
     }

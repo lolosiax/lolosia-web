@@ -1,9 +1,15 @@
 import type { Object3D } from 'three'
+import { getRoot } from '@/core/lib/http'
 import type { CharacterMode } from './character'
 import { createClipPlayer, loadClip, type ClipPlayer } from './clip-animation'
 
-/** 烘焙动画（Unity 采样结果）目录。 */
-const CLIP_BASE = `${import.meta.env.BASE_URL}res/animations/`
+/**
+ * 烘焙动画（Unity 采样结果）目录。
+ *
+ * 动画体积大且不入库（`web/public/res` 已移除），由后端 `/res/resources/**`
+ * 从 `<workDir>/resources/**` 直接读盘下发，不再打进 .exe 的内嵌 classpath。
+ */
+const CLIP_BASE = `${getRoot()}/res/resources/animations/`
 /** AFK 动画（Unity Moe_AFK_Loop_by_Levin 烘焙结果）。 */
 export const AFK_CLIP_URL = `${CLIP_BASE}moe_afk.json`
 /** 行走剪辑（Unity 行走2 重定向烘焙结果），调试面板用来和程序化步态对比。 */
@@ -148,11 +154,9 @@ export function applyGaitClip(
   root: Object3D
 ): GaitPlayer | null {
   if (!gait) return null
-  if (!walking && weight < 0.01) {
-    gait.player.reset()
-    root.updateMatrixWorld(true)
-    return null
-  }
+  // 权重已淡到接近 0，骨骼基本就是程序化姿态，直接交还即可。
+  // 不能在这里 reset()：那会把全身写回 bind（A/T-pose），收尾会闪一下骨架张开。
+  if (!walking && weight < 0.01) return null
   gait.player.update(delta * gait.rate, weight)
   root.updateMatrixWorld(true)
   return gait

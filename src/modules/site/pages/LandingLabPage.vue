@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, toValue } from 'vue'
 import type { CSSProperties } from 'vue'
+import Debugger from '@/core/layout/shared/Debugger.vue'
+import { buildSummary } from '@/core/config/env'
+import { useDebugStore } from '@/core/stores/debug'
 import RouteSwitcher from '../components/shared/RouteSwitcher.vue'
 import SceneControlHud from '../components/shared/SceneControlHud.vue'
 import SceneDebugPanel from '../components/shared/SceneDebugPanel.vue'
@@ -14,8 +17,10 @@ import { usePetalScene } from '../composables/use-petal-scene'
 defineOptions({ name: 'LandingLabPage' })
 
 const canvas = ref<HTMLCanvasElement | null>(null)
+/** 页面切换与场景调试面板默认隐藏，由调试开关「显示落地页调试器」放出。 */
+const debug = useDebugStore()
 const { leftCards, largeCard, open } = useLandingCards()
-const { status, error, characterMode, cameraMode, flyMode, active, setCharacterMode, setCameraMode, setFlyMode } =
+const { error, characterMode, cameraMode, flyMode, active, setCharacterMode, setCameraMode, setFlyMode } =
   usePetalScene(canvas)
 
 /** 模式窗只切相机；角色保持当前选择（自动漫步 / 动画剪辑）不变。 */
@@ -35,11 +40,8 @@ const { open: wheelOpen, highlight: wheelHighlight } = useModeWheel(applyQuickMo
 
 const cards = computed(() => (largeCard.value ? [...leftCards.value, largeCard.value] : leftCards.value))
 
-const statusText = computed(() => {
-  if (status.value === 'ready') return 'three.js · WebGL2 · 50 片实例化花瓣 · 锦鲤跃水 · 实时水面涟漪'
-  if (status.value === 'unsupported') return '当前环境不支持 WebGL，已回退为静态背景'
-  return '场景初始化中…'
-})
+/** 版本号与构建信息，和登录页页脚同一份文案。 */
+const buildText = computed(() => buildSummary())
 
 function hasPhoto(card: LandingCard): boolean {
   return Boolean(toValue(card.bgImage))
@@ -59,12 +61,12 @@ function cardStyle(card: LandingCard): CSSProperties {
     <canvas ref="canvas" class="lab__canvas" />
 
     <header class="lab__head">
-      <p class="lab__badge">SCENE 01</p>
+      <p class="lab__badge"><span class="lab__badge-dot" />NAVIGATION</p>
       <h1 class="lab__title">
-        <span>水面之上</span>
-        花瓣正在落下
+        <span class="lab__title-line" data-text="欢迎你">欢迎你</span>
+        <span class="lab__title-line lab__title-line--accent" data-text="来自现实的旅人">来自现实的旅人</span>
       </h1>
-      <p class="lab__subtitle">雾化过渡 · 倾斜视口 · 实时涟漪 · 实例化花瓣</p>
+      <p class="lab__subtitle">你想要去往何方？</p>
     </header>
 
     <nav class="lab__cards" aria-label="站点导航">
@@ -84,12 +86,13 @@ function cardStyle(card: LandingCard): CSSProperties {
       </button>
     </nav>
 
-    <RouteSwitcher />
+    <RouteSwitcher v-if="debug.showLandingDebug" />
 
     <SceneControlHud :camera-mode="cameraMode" :fly-mode="flyMode" :active="active" />
     <SceneModeWheel :open="wheelOpen" :highlight="wheelHighlight" />
 
     <SceneDebugPanel
+      v-if="debug.showLandingDebug"
       :character-mode="characterMode"
       :camera-mode="cameraMode"
       :fly-mode="flyMode"
@@ -98,7 +101,13 @@ function cardStyle(card: LandingCard): CSSProperties {
       @fly="setFlyMode"
     />
 
-    <p class="lab__status">{{ statusText }}</p>
+    <!-- 只保留 Ctrl+Alt+0 打开的调试弹窗，不在页面上留图标。 -->
+    <Debugger :show-trigger="false" />
+
+    <footer class="lab__footer">
+      <p class="lab__copyright">© 2026 Lolosia. All rights reserved.</p>
+      <p class="lab__build">{{ buildText }}</p>
+    </footer>
     <p v-if="error" class="lab__error">{{ error }}</p>
 
     <div class="lab__fog" aria-hidden="true" />
@@ -108,7 +117,11 @@ function cardStyle(card: LandingCard): CSSProperties {
 <style scoped lang="scss">
 $ink: #33203f;
 $muted: #7d6a88;
-$accent: #8a5f9a;
+/* 欢迎语沿用完整动效页（LandingIntro）的配色与描边层次。 */
+$welcome-primary: #c296cd;
+$welcome-primary-dark: #a480ab;
+$welcome-ink: #2d1b3a;
+$welcome-muted: #8a7a94;
 
 .lab {
   position: relative;
@@ -134,7 +147,7 @@ $accent: #8a5f9a;
     cursor: crosshair;
     user-select: none;
 
-    .lab__status,
+    .lab__footer,
     .lab__error {
       opacity: 0;
     }
@@ -179,7 +192,9 @@ $accent: #8a5f9a;
 .lab__head {
   position: relative;
   z-index: 2;
-  max-width: 460px;
+  /* 460px 是文字区宽度：左内边距用 vw，所以要把这份 padding 加回上限，
+     否则「来自现实的旅人」在宽屏上会被挤到换行。 */
+  max-width: calc(460px + 6vw);
   padding: 15vh 0 0 6vw;
   pointer-events: none;
   transition:
@@ -188,39 +203,78 @@ $accent: #8a5f9a;
 }
 
 .lab__badge {
-  display: inline-block;
-  margin: 0 0 18px;
-  padding: 4px 12px;
-  border: 1px solid rgb(255 255 255 / 60%);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 40%);
-  color: $muted;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 6px 16px;
+  border: 1px solid rgb(194 150 205 / 25%);
+  border-radius: 20px;
+  background: rgb(255 255 255 / 50%);
+  color: $welcome-primary-dark;
   font-size: 10px;
-  letter-spacing: 3px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+.lab__badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: $welcome-primary;
 }
 
 .lab__title {
   margin: 0 0 14px;
   font-size: clamp(30px, 4.2vw, 52px);
   font-weight: 800;
-  letter-spacing: 0.05em;
-  line-height: 1.24;
+  line-height: 1.1;
+  isolation: isolate;
+}
 
-  span {
-    display: block;
-    margin-bottom: 6px;
-    color: $accent;
-    font-size: 0.44em;
-    font-weight: 500;
-    letter-spacing: 0.5em;
+.lab__title-line {
+  position: relative;
+  display: block;
+  color: $welcome-ink;
+
+  &::before {
+    content: attr(data-text);
+    position: absolute;
+    z-index: -1;
+    -webkit-text-stroke: 3px #fff;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.lab__title-line--accent {
+  padding-bottom: 5px;
+  background: linear-gradient(135deg, $welcome-primary 0%, #dbb4e2 50%, $welcome-primary-dark 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* 这块比完整动效页窄，同字号才放得下「来自现实的旅人」一行。 */
+  font-size: 1em;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, $welcome-primary, transparent);
+    opacity: 0.35;
   }
 }
 
 .lab__subtitle {
   margin: 0;
-  color: $muted;
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  color: $welcome-muted;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 .lab__cards {
@@ -323,7 +377,7 @@ $accent: #8a5f9a;
   text-transform: uppercase;
 }
 
-.lab__status {
+.lab__footer {
   position: absolute;
   bottom: 22px;
   left: 6vw;
@@ -331,13 +385,24 @@ $accent: #8a5f9a;
   margin: 0;
   color: $muted;
   font-size: 11px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
+  line-height: 1.75;
   transition: opacity 0.3s ease;
+
+  p {
+    margin: 0;
+  }
+}
+
+/* 构建信息比版权行淡一档，两行仍归在同一块里。 */
+.lab__build {
+  color: rgb(125 106 136 / 75%);
+  letter-spacing: 0.04em;
 }
 
 .lab__error {
   position: absolute;
-  bottom: 42px;
+  bottom: 68px;
   left: 6vw;
   z-index: 2;
   margin: 0;
@@ -399,7 +464,7 @@ $accent: #8a5f9a;
     animation: none;
   }
 
-  .lab__status,
+  .lab__footer,
   .lab__error {
     position: static;
     margin: 24px 20px 0;

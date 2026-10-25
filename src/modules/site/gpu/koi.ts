@@ -62,6 +62,10 @@ export interface KoiOptions {
 
 export interface KoiHandle {
   readonly root: Group
+  /** 锦鲤当前位置；未腾空时停在上一次入水点。角色用它当注视目标。 */
+  readonly position: Vector3
+  /** 是否正有鱼在空中（角色只在这段时间里关注它）。 */
+  readonly leaping: boolean
   /** avoid 通常传角色位置，用来避开她脚下的水域。 */
   update(delta: number, elapsed: number, avoid?: Vector3 | null): void
   dispose(): void
@@ -526,5 +530,15 @@ export function createKoi(options: KoiOptions): KoiHandle {
     splash.dispose()
   }
 
-  return { root, update, dispose }
+  return {
+    root,
+    get position() {
+      return model.group.position
+    },
+    get leaping() {
+      return jumping
+    },
+    update,
+    dispose
+  }
 }

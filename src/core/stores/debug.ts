@@ -10,18 +10,20 @@ export const useDebugStore = defineStore(
     const showLayoutGrid = ref(false)
     const displayError = ref(false)
     const displayAllError = ref(false)
+    /** 落地页（GPU 测试页）的开发控件：页面切换与场景调试面板。 */
+    const showLandingDebug = ref(false)
 
     function toggleLayoutGrid(): void {
       showLayoutGrid.value = !showLayoutGrid.value
     }
 
-    return { enable, showLayoutGrid, displayError, displayAllError, toggleLayoutGrid }
+    return { enable, showLayoutGrid, displayError, displayAllError, showLandingDebug, toggleLayoutGrid }
   },
   {
     persist: {
       key: 'debug',
       storage: localStorage,
-      pick: ['enable', 'showLayoutGrid', 'displayError', 'displayAllError']
+      pick: ['enable', 'showLayoutGrid', 'displayError', 'displayAllError', 'showLandingDebug']
     }
   }
 )

@@ -30,9 +30,13 @@ interface Track {
   node: Object3D
   /** 相对角色根节点的静止世界旋转，播放时再叠加根节点当前朝向。 */
   rest: Quaternion
+  /**
+   * 构造时的局部姿态（骨骼静止姿态）。
+   *
+   * 只用于显式 `reset()`（切换调试模式时把剪辑写过的骨骼交还给静止姿态）。
+   * 淡入淡出不走它：静止姿态是 A/T-pose，拿它当落点会看到每个动作收尾时骨架「张开一下」。
+   */
   bind: Quaternion
-  /** 进入剪辑时的局部姿态（程序化步态 / IK 的结果），退出时淡回这里而不是硬切 bind。 */
-  base: Quaternion
   rot: number[][]
   depth: number
 }
@@ -86,7 +90,6 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
         node,
         rest: new Quaternion(),
         bind: node.quaternion.clone(),
-        base: new Quaternion(),
         rot: bone.rot,
         depth: depthOf(node)
       })
@@ -108,8 +111,6 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
   const rootQ = new Quaternion()
   const target = new Quaternion()
   let time = 0
-  /** 是否已记录进入剪辑前的姿态；退出剪辑时用它做淡出目标。 */
-  let baseReady = false
 
   function update(delta: number, weight = 1): void {
     time = (time + delta) % clip.duration
@@ -118,12 +119,6 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
     const alpha = frame - index
     const blend = Math.min(1, Math.max(0, weight))
     root.getWorldQuaternion(rootQ)
-
-    // 第一次更新时骨骼还是程序化/IK 姿态，留作权重归零时的落点。
-    if (!baseReady) {
-      for (const track of tracks) track.base.copy(track.node.quaternion)
-      baseReady = true
-    }
 
     for (const track of tracks) {
       const count = track.rot.length
@@ -145,15 +140,15 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
         target.copy(rotA)
       }
 
-      // 权重在 base 与剪辑姿态之间插值：淡出时回到进入前的程序化/IK 姿态，不会停在剪辑末帧再硬切。
+      // 从「本帧的程序化/IK 姿态」向剪辑姿态插值：两端都是自然姿态，
+      // 不会经过 bind（A/T-pose），收尾时也就不会出现骨架张开。
       if (blend >= 1) track.node.quaternion.copy(target)
-      else track.node.quaternion.copy(track.base).slerp(target, blend)
+      else track.node.quaternion.slerp(target, blend)
     }
   }
 
   function reset(): void {
-    for (const track of tracks) track.node.quaternion.copy(baseReady ? track.base : track.bind)
-    baseReady = false
+    for (const track of tracks) track.node.quaternion.copy(track.bind)
   }
 
   return {

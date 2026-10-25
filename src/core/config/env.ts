@@ -17,11 +17,16 @@ export const amap = {
   securityCode: import.meta.env.VITE_AMAP_SECURITY_CODE ?? ''
 } as const
 
-/** 一句话构建信息，登录页与调试面板共用。 */
+/**
+ * 一句话构建信息，登录页与落地页页脚共用。
+ * 只把真实存在的字段拼进去，避免出现「构建 于」这类残缺或语序别扭的文案；
+ * commit 是构建信息而不是版本号的一部分，所以用分隔符而不是 `-` 拼接。
+ */
 export function buildSummary(): string {
   const version = buildInfo.backVersion || buildInfo.frontVersion
-  if (!buildInfo.buildTime) return `版本 ${version}-dev`
-  const commit = buildInfo.commit ? `-${buildInfo.commit.slice(0, 8)}` : ''
-  const branch = buildInfo.branch ? `构建 ${buildInfo.branch} 于` : '构建于'
-  return `当前版本 ${version}${commit} ${branch} ${buildInfo.buildTime}`
+  const parts = [`版本 ${version}`]
+  if (buildInfo.commit) parts.push(`哈希 ${buildInfo.commit.slice(0, 8)}`)
+  if (buildInfo.branch) parts.push(`分支 ${buildInfo.branch}`)
+  parts.push(buildInfo.buildTime ? `构建于 ${buildInfo.buildTime}` : '本地开发')
+  return parts.join(' · ')
 }

@@ -6,6 +6,9 @@ import MenuIcon from '@/core/ui/MenuIcon.vue'
 
 defineOptions({ name: 'Debugger' })
 
+/** showTrigger=false：只挂控件与快捷键（Ctrl+Alt+0），不在页面上留调试图标。 */
+withDefaults(defineProps<{ showTrigger?: boolean }>(), { showTrigger: true })
+
 const debug = useDebugStore()
 const open = ref(false)
 
@@ -25,7 +28,7 @@ watch(
 
 <template>
   <div class="debugger">
-    <ElTooltip v-if="debug.enable" content="调试工具" placement="right">
+    <ElTooltip v-if="showTrigger && debug.enable" content="调试工具" placement="right">
       <ElButton class="debugger__trigger" text circle size="small" @click="open = true">
         <MenuIcon icon="bug-fill" />
       </ElButton>
@@ -37,6 +40,10 @@ watch(
         <div class="debugger__item">
           <span>显示调试工具图标</span>
           <ElSwitch v-model="debug.enable" />
+        </div>
+        <div class="debugger__item">
+          <span>显示落地页调试器</span>
+          <ElSwitch v-model="debug.showLandingDebug" />
         </div>
         <div class="debugger__item">
           <span>显示页面布局网格</span>
