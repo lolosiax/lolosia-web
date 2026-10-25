@@ -21,11 +21,14 @@ export interface ClipPlayer {
   /** 当前播放时间（秒，0..duration），供诊断采样对齐使用。 */
   readonly time: number
   update(delta: number): void
+  /** 回到模型静止姿态，退出剪辑驱动时用。 */
+  reset(): void
 }
 
 interface Track {
   node: Object3D
   rest: Quaternion
+  restLocal: Quaternion
   rot: number[][]
   depth: number
 }
@@ -74,7 +77,15 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
   const tracks: Track[] = []
   for (const bone of clip.bones) {
     const node = lookup.get(normalize(bone.name))
-    if (node) tracks.push({ node, rest: new Quaternion(), rot: bone.rot, depth: depthOf(node) })
+    if (node) {
+      tracks.push({
+        node,
+        rest: new Quaternion(),
+        restLocal: node.quaternion.clone(),
+        rot: bone.rot,
+        depth: depthOf(node)
+      })
+    }
   }
   if (tracks.length === 0) return null
 
@@ -97,10 +108,12 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
 
     for (const track of tracks) {
       const count = track.rot.length
+      const first = track.rot[0]
+      if (!first) continue
       const a = index % count
       const b = (a + 1) % count
-      rotA.fromArray(track.rot[a])
-      rotB.fromArray(track.rot[b])
+      rotA.fromArray(track.rot[a] ?? first)
+      rotB.fromArray(track.rot[b] ?? first)
       rotA.slerp(rotB, alpha)
 
       if (clip.worldDelta) {
@@ -114,10 +127,15 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
     }
   }
 
+  function reset(): void {
+    for (const track of tracks) track.node.quaternion.copy(track.restLocal)
+  }
+
   return {
     get time() {
       return time
     },
-    update
+    update,
+    reset
   }
 }

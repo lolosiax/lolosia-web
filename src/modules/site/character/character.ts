@@ -16,8 +16,10 @@ import {
 import type { Material } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createHairPhysics } from './hair-physics'
+import type { HairPhysics } from './hair-physics'
 import { createClipPlayer, loadClip, type ClipPlayer } from './clip-animation'
 import { useSiteSceneStore } from '../store'
+import type { CharacterPose } from '../store'
 
 const TARGET_HEIGHT = 1.15
 const WALK_SPEED = 0.36
@@ -35,13 +37,19 @@ const STANCE_RATIO = 0.5
 const STEP_LIFT = 0.05
 /** AFK 动画（Unity Moe_AFK_Loop_by_Levin 烘焙结果）。 */
 const AFK_CLIP_URL = `${import.meta.env.BASE_URL}res/animations/moe_afk.json`
+/** 行走剪辑（Unity 行走2 重定向烘焙结果），调试面板用来和程序化步态对比。 */
+const WALK_CLIP_URL = `${import.meta.env.BASE_URL}res/animations/moe_walk.json`
 
 export type CharacterState = 'idle' | 'walk'
+/** auto：程序化步态 + 自动漫步；clip：原地循环播放烘焙行走剪辑。 */
+export type CharacterMode = 'auto' | 'clip'
 
 export interface CharacterHandle {
   readonly state: CharacterState
+  readonly mode: CharacterMode
   readonly position: Vector3
   readonly feet: Vector3[]
+  setMode(mode: CharacterMode): void
   update(delta: number, elapsed: number, waterY: number): void
   dispose(): void
 }
@@ -54,7 +62,10 @@ interface AnimatedBone {
   dropAngle: number
 }
 
-type Rig = Record<'leftLeg' | 'rightLeg' | 'leftKnee' | 'rightKnee' | 'leftArm' | 'rightArm' | 'leftElbow' | 'rightElbow' | 'spine', AnimatedBone | null>
+type Rig = Record<
+  'leftLeg' | 'rightLeg' | 'leftKnee' | 'rightKnee' | 'leftArm' | 'rightArm' | 'leftElbow' | 'rightElbow' | 'spine',
+  AnimatedBone | null
+>
 
 /** 一条腿做 IK 需要的常量：骨骼、静止姿态、骨长与静止脚踝位置。 */
 interface IkLeg {
@@ -97,9 +108,7 @@ function buildBone(root: Group, name: string, dropAngle = 0): AnimatedBone | nul
 
   const rest = node.quaternion.clone()
   const world = node.getWorldQuaternion(new Quaternion())
-  const dropAxis = dropAngle
-    ? new Vector3(0, 0, 1).applyQuaternion(world.clone().invert()).normalize()
-    : null
+  const dropAxis = dropAngle ? new Vector3(0, 0, 1).applyQuaternion(world.clone().invert()).normalize() : null
   const posed = dropAxis ? world.clone().multiply(new Quaternion().setFromAxisAngle(dropAxis, dropAngle)) : world
   const bendAxis = new Vector3(1, 0, 0).applyQuaternion(posed.clone().invert()).normalize()
 
@@ -123,7 +132,13 @@ function buildRig(root: Group): Rig {
 
 const tempQuat = new Quaternion()
 
-function buildIkLeg(root: Group, hipName: string, kneeName: string, ankleName: string, kneeAxis: Vector3): IkLeg | null {
+function buildIkLeg(
+  root: Group,
+  hipName: string,
+  kneeName: string,
+  ankleName: string,
+  kneeAxis: Vector3
+): IkLeg | null {
   const thigh = findBone(root, hipName)
   const shin = findBone(root, kneeName)
   const ankle = findBone(root, ankleName)
@@ -214,7 +229,9 @@ function solveIkLeg(leg: IkLeg, target: Vector3, weight: number, yaw: number): v
   const cosine = (leg.hipLength ** 2 + leg.shinLength ** 2 - distance ** 2) / (2 * leg.hipLength * leg.shinLength)
   const kneeAngle = Math.acos(Math.min(1, Math.max(-1, cosine)))
   // 膝盖内角越小 = 屈曲越多；正角度在 kneeAxis 上表示屈曲（小腿向后收）。
-  const shinSolved = leg.shinRest.clone().multiply(ikTempQuat.setFromAxisAngle(leg.kneeAxis, leg.restKneeAngle - kneeAngle))
+  const shinSolved = leg.shinRest
+    .clone()
+    .multiply(ikTempQuat.setFromAxisAngle(leg.kneeAxis, leg.restKneeAngle - kneeAngle))
   leg.shin.quaternion.copy(shinSolved)
   leg.shin.updateWorldMatrix(false, true)
 
@@ -249,7 +266,7 @@ const footTarget = new Vector3()
  * 摆动相则平滑抬脚前摆。步幅由 WALK_SPEED × 周期反推，所以脚不再追不上身体。
  */
 function solveFoot(leg: IkLeg, legPhase: number, plan: FootPlan): void {
-  const cycle = ((legPhase / (Math.PI * 2)) % 1 + 1) % 1
+  const cycle = (((legPhase / (Math.PI * 2)) % 1) + 1) % 1
   const halfStep = (WALK_SPEED * LEG_CYCLE_SECONDS) / 4
   let offsetZ: number
   let lift = 0
@@ -393,38 +410,182 @@ function initialPose(store: ReturnType<typeof useSiteSceneStore>): { position: V
   return { position, yaw: resume ? resume.yaw : 0 }
 }
 
-/** 载入 GLB 角色，并用一个极简状态机让她在水面上散步。 */
-export async function createCharacter(scene: Scene, url: string): Promise<CharacterHandle> {
+interface CharacterCore {
+  root: Group
+  rig: Rig
+  leftFoot: Object3D | null
+  rightFoot: Object3D | null
+  leftFootPos: Vector3
+  rightFootPos: Vector3
+  ikLeft: IkLeg | null
+  ikRight: IkLeg | null
+  hair: HairPhysics | null
+  store: ReturnType<typeof useSiteSceneStore>
+  initial: { position: Vector3; yaw: number }
+}
+
+/** 载入模型，并一次性准备好绑定、脚踝与头发物理。 */
+async function prepareCharacter(scene: Scene, url: string): Promise<CharacterCore> {
   const root = await loadModel(url)
   scene.add(root)
-
   const rig = buildRig(root)
-  const leftFoot = findBone(root, 'Left ankle')
-  const rightFoot = findBone(root, 'Right ankle')
-  const leftFootPos = new Vector3()
-  const rightFootPos = new Vector3()
-  const feet = [leftFootPos, rightFootPos]
-
   const { left: ikLeft, right: ikRight } = buildLegRig(root, rig)
-  const hair = createHairPhysics(root)
-
   const store = useSiteSceneStore()
-  const initial = initialPose(store)
-  const position = initial.position
+  return {
+    root,
+    rig,
+    leftFoot: findBone(root, 'Left ankle'),
+    rightFoot: findBone(root, 'Right ankle'),
+    leftFootPos: new Vector3(),
+    rightFootPos: new Vector3(),
+    ikLeft,
+    ikRight,
+    hair: createHairPhysics(root),
+    store,
+    initial: initialPose(store)
+  }
+}
+
+interface WalkControl {
+  readonly player: ClipPlayer | null
+  readonly mode: CharacterMode
+  setMode(mode: CharacterMode): void
+}
+
+/** 行走剪辑必须在骨骼静止时创建播放器，因此这里统一负责加载与开关。 */
+async function createWalkControl(root: Object3D, afk: boolean, onEnter: () => void): Promise<WalkControl> {
+  let player: ClipPlayer | null = null
+  if (!afk) {
+    try {
+      const clip = await loadClip(WALK_CLIP_URL)
+      player = clip ? createClipPlayer(root, clip) : null
+      if (clip && !player) console.warn('行走剪辑与骨骼不匹配，保持程序化步态')
+    } catch (err) {
+      console.warn('行走剪辑载入失败，保持程序化步态', err)
+    }
+  }
+  let mode: CharacterMode = 'auto'
+
+  function setMode(next: CharacterMode): void {
+    if (afk || next === mode) return
+    if (next === 'clip' && !player) {
+      console.warn('行走剪辑未就绪，保持自动步态')
+      return
+    }
+    mode = next
+    if (mode === 'clip') {
+      onEnter()
+      return
+    }
+    // 退出剪辑时把未被程序化步态覆盖的骨骼（手指、头等）还原，避免残留上一帧。
+    player?.reset()
+    root.updateMatrixWorld(true)
+  }
+
+  return {
+    player,
+    get mode() {
+      return mode
+    },
+    setMode
+  }
+}
+
+interface Persistence {
+  tick(delta: number): void
+  save(): void
+}
+
+/** 把角色落点按固定间隔写回 Pinia，避免每帧都碰 localStorage。 */
+function createPersistence(store: ReturnType<typeof useSiteSceneStore>, readPose: () => CharacterPose): Persistence {
+  let timer = 0
+
+  function save(): void {
+    store.saveCharacterPose(readPose())
+  }
+
+  function tick(delta: number): void {
+    timer += delta
+    if (timer < POSE_SAVE_INTERVAL) return
+    timer = 0
+    save()
+  }
+
+  return { tick, save }
+}
+
+interface MotionPhase {
+  gait: number
+  phase: number
+}
+
+/** 程序化步态：手臂与脊椎始终驱动，缺 IK 时退回纯 FK 腿部摆动。 */
+function animateCharacter(
+  rig: Rig,
+  state: CharacterState,
+  motion: MotionPhase,
+  delta: number,
+  elapsed: number,
+  hasIk: boolean
+): void {
+  motion.gait += ((state === 'walk' ? 1 : 0) - motion.gait) * Math.min(1, delta * 6)
+  motion.phase += (delta * Math.PI * 2) / LEG_CYCLE_SECONDS
+
+  const swing = Math.sin(motion.phase) * 0.32 * motion.gait
+  pose(rig.leftArm, -swing)
+  pose(rig.rightArm, swing)
+  pose(rig.leftElbow, 0.18 + Math.max(0, swing) * 0.25)
+  pose(rig.rightElbow, 0.18 + Math.max(0, -swing) * 0.25)
+  pose(rig.spine, Math.sin(elapsed * 1.5) * 0.015 + Math.sin(motion.phase * 2) * 0.025 * motion.gait)
+
+  if (hasIk) return
+
+  const legSwing = Math.sin(motion.phase) * 0.55 * motion.gait
+  pose(rig.leftLeg, legSwing)
+  pose(rig.rightLeg, -legSwing)
+  pose(rig.leftKnee, Math.max(0, Math.sin(motion.phase - 1.1)) * 0.85 * motion.gait)
+  pose(rig.rightKnee, Math.max(0, Math.sin(motion.phase - 1.1 + Math.PI)) * 0.85 * motion.gait)
+}
+
+function updateFeet(leftFoot: Object3D | null, rightFoot: Object3D | null, leftPos: Vector3, rightPos: Vector3): void {
+  leftFoot?.getWorldPosition(leftPos)
+  rightFoot?.getWorldPosition(rightPos)
+}
+
+/** 释放角色网格与材质，并把当前位置留作下次刷新。 */
+function disposeCharacter(scene: Scene, root: Group, persistence: Persistence): void {
+  persistence.save()
+  scene.remove(root)
+  root.traverse(object => {
+    const mesh = object as {
+      geometry?: { dispose(): void }
+      material?: { dispose(): void } | Array<{ dispose(): void }>
+    }
+    mesh.geometry?.dispose()
+    if (Array.isArray(mesh.material)) mesh.material.forEach(material => material.dispose())
+    else mesh.material?.dispose()
+  })
+}
+
+/** 载入 GLB 角色，并用一个极简状态机让她在水面上散步。 */
+export async function createCharacter(scene: Scene, url: string): Promise<CharacterHandle> {
+  const core = await prepareCharacter(scene, url)
+  const { root, rig, leftFoot, rightFoot, leftFootPos, rightFootPos, ikLeft, ikRight, hair, store } = core
+  const feet = [leftFootPos, rightFootPos]
+  const position = core.initial.position
   const target = new Vector3().copy(position)
   const forward = new Vector3()
+  const yawAxis = new Vector3(0, 1, 0)
   let state: CharacterState = 'idle'
   let idleFor = between(0.6, 1.8)
-  let yaw = initial.yaw
-  let phase = 0
-  let gait = 0
-  let saveTimer = 0
-  const yawAxis = new Vector3(0, 1, 0)
-  const { afk, player: clipPlayer } = await setupAfkMode(root, () => state)
+  let yaw = core.initial.yaw
+  const motion: MotionPhase = { gait: 0, phase: 0 }
 
-  function persistPose(): void {
-    store.saveCharacterPose({ x: position.x, z: position.z, yaw })
-  }
+  const { afk, player: clipPlayer } = await setupAfkMode(root, () => state)
+  const walk = await createWalkControl(root, afk, () => {
+    state = 'idle'
+  })
+  const persistence = createPersistence(store, () => ({ x: position.x, z: position.z, yaw }))
 
   function pickTarget(): void {
     target.set(between(BOUNDS.xMin, BOUNDS.xMax), 0, between(BOUNDS.zFar, BOUNDS.zNear))
@@ -448,30 +609,26 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
     position.addScaledVector(forward, Math.min(WALK_SPEED * delta, distance))
   }
 
-  function animate(delta: number, elapsed: number): void {
-    gait += ((state === 'walk' ? 1 : 0) - gait) * Math.min(1, delta * 6)
-    phase += (delta * Math.PI * 2) / LEG_CYCLE_SECONDS
-
-    const swing = Math.sin(phase) * 0.32 * gait
-    pose(rig.leftArm, -swing)
-    pose(rig.rightArm, swing)
-    pose(rig.leftElbow, 0.18 + Math.max(0, swing) * 0.25)
-    pose(rig.rightElbow, 0.18 + Math.max(0, -swing) * 0.25)
-    pose(rig.spine, Math.sin(elapsed * 1.5) * 0.015 + Math.sin(phase * 2) * 0.025 * gait)
-
-    // 骨骼缺失时退回纯 FK 步态，避免整套动作消失。
-    if (!ikLeft || !ikRight) {
-      const legSwing = Math.sin(phase) * 0.55 * gait
-      pose(rig.leftLeg, legSwing)
-      pose(rig.rightLeg, -legSwing)
-      pose(rig.leftKnee, Math.max(0, Math.sin(phase - 1.1)) * 0.85 * gait)
-      pose(rig.rightKnee, Math.max(0, Math.sin(phase - 1.1 + Math.PI)) * 0.85 * gait)
-    }
-  }
-
   const footPlan: FootPlan = { position, yaw: 0, waterY: 0, weight: 0 }
 
+  /** 剪辑模式：站在原地循环播放烘焙行走，不跑状态机与 IK。 */
+  function updateClipPose(delta: number, waterY: number): void {
+    root.position.set(position.x, waterY, position.z)
+    root.quaternion.setFromAxisAngle(yawAxis, yaw)
+    root.updateMatrixWorld(true)
+    walk.player?.update(delta)
+    root.updateMatrixWorld(true)
+    hair?.update(delta)
+    updateFeet(leftFoot, rightFoot, leftFootPos, rightFootPos)
+    persistence.tick(delta)
+  }
+
   function update(delta: number, elapsed: number, waterY: number): void {
+    if (walk.mode === 'clip' && walk.player) {
+      updateClipPose(delta, waterY)
+      return
+    }
+
     if (afk) {
       state = 'idle'
     } else if (state === 'idle') {
@@ -481,12 +638,12 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
       move(delta)
     }
 
-    if (!afk) animate(delta, elapsed)
+    if (!afk) animateCharacter(rig, state, motion, delta, elapsed, Boolean(ikLeft && ikRight))
 
-    const bob = afk ? 0 : state === 'walk' ? Math.abs(Math.sin(phase)) * 0.02 : Math.sin(elapsed * 1.4) * 0.007
+    const bob = afk ? 0 : state === 'walk' ? Math.abs(Math.sin(motion.phase)) * 0.02 : Math.sin(elapsed * 1.4) * 0.007
     root.position.set(position.x, waterY + bob, position.z)
     root.quaternion.setFromAxisAngle(yawAxis, yaw)
-    root.rotateZ(state === 'walk' ? Math.sin(phase) * 0.02 : 0)
+    root.rotateZ(state === 'walk' ? Math.sin(motion.phase) * 0.02 : 0)
     root.updateMatrixWorld(true)
 
     // IK 需要角色世界矩阵已更新，因此放在根节点摆好之后。
@@ -496,43 +653,30 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
     } else if (ikLeft && ikRight) {
       footPlan.yaw = yaw
       footPlan.waterY = waterY
-      footPlan.weight = gait
-      solveFoot(ikLeft, phase, footPlan)
-      solveFoot(ikRight, phase + Math.PI, footPlan)
+      footPlan.weight = motion.gait
+      solveFoot(ikLeft, motion.phase, footPlan)
+      solveFoot(ikRight, motion.phase + Math.PI, footPlan)
       root.updateMatrixWorld(true)
     }
 
     // 头发/尾巴/耳朵/胸部：只动 Head、Hips 子树，放在 IK 之后执行。
     hair?.update(delta)
 
-    leftFoot?.getWorldPosition(leftFootPos)
-    rightFoot?.getWorldPosition(rightFootPos)
-
-    saveTimer += delta
-    if (saveTimer >= POSE_SAVE_INTERVAL) {
-      saveTimer = 0
-      persistPose()
-    }
-  }
-
-  function dispose(): void {
-    persistPose()
-    scene.remove(root)
-    root.traverse(object => {
-      const mesh = object as { geometry?: { dispose(): void }; material?: { dispose(): void } | Array<{ dispose(): void }> }
-      mesh.geometry?.dispose()
-      if (Array.isArray(mesh.material)) mesh.material.forEach(material => material.dispose())
-      else mesh.material?.dispose()
-    })
+    updateFeet(leftFoot, rightFoot, leftFootPos, rightFootPos)
+    persistence.tick(delta)
   }
 
   return {
     get state() {
       return state
     },
+    get mode() {
+      return walk.mode
+    },
     position,
     feet,
+    setMode: walk.setMode,
     update,
-    dispose
+    dispose: () => disposeCharacter(scene, root, persistence)
   }
 }

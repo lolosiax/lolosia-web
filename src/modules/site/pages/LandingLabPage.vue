@@ -2,15 +2,36 @@
 import { computed, ref, toValue } from 'vue'
 import type { CSSProperties } from 'vue'
 import RouteSwitcher from '../components/shared/RouteSwitcher.vue'
+import SceneControlHud from '../components/shared/SceneControlHud.vue'
+import SceneDebugPanel from '../components/shared/SceneDebugPanel.vue'
+import SceneModeWheel from '../components/shared/SceneModeWheel.vue'
 import { useLandingCards } from '../composables/use-landing-cards'
 import type { LandingCard } from '../composables/use-landing-cards'
+import { useModeWheel } from '../composables/use-mode-wheel'
+import type { QuickMode } from '../composables/use-mode-wheel'
 import { usePetalScene } from '../composables/use-petal-scene'
 
 defineOptions({ name: 'LandingLabPage' })
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const { leftCards, largeCard, open } = useLandingCards()
-const { status, error } = usePetalScene(canvas)
+const { status, error, characterMode, cameraMode, flyMode, active, setCharacterMode, setCameraMode, setFlyMode } =
+  usePetalScene(canvas)
+
+/** 模式窗只切相机；角色保持当前选择（自动漫步 / 动画剪辑）不变。 */
+function applyQuickMode(mode: QuickMode): void {
+  if (mode === 'play') {
+    setCameraMode('default')
+    return
+  }
+  setFlyMode(mode === 'mc' ? 'mc' : 'maya')
+  setCameraMode('fly')
+}
+
+/** 模式窗只对应相机：飞行时按飞行手感，其余都算播放（默认相机）。 */
+const currentQuickMode = computed<QuickMode>(() => (cameraMode.value === 'fly' ? flyMode.value : 'play'))
+
+const { open: wheelOpen, highlight: wheelHighlight } = useModeWheel(applyQuickMode, () => currentQuickMode.value)
 
 const cards = computed(() => (largeCard.value ? [...leftCards.value, largeCard.value] : leftCards.value))
 
@@ -34,7 +55,7 @@ function cardStyle(card: LandingCard): CSSProperties {
 </script>
 
 <template>
-  <div class="lab">
+  <div class="lab" :class="{ 'is-flying': cameraMode === 'fly', 'is-operating': active }">
     <canvas ref="canvas" class="lab__canvas" />
 
     <header class="lab__head">
@@ -64,6 +85,18 @@ function cardStyle(card: LandingCard): CSSProperties {
     </nav>
 
     <RouteSwitcher />
+
+    <SceneControlHud :camera-mode="cameraMode" :fly-mode="flyMode" :active="active" />
+    <SceneModeWheel :open="wheelOpen" :highlight="wheelHighlight" />
+
+    <SceneDebugPanel
+      :character-mode="characterMode"
+      :camera-mode="cameraMode"
+      :fly-mode="flyMode"
+      @character="setCharacterMode"
+      @camera="setCameraMode"
+      @fly="setFlyMode"
+    />
 
     <p class="lab__status">{{ statusText }}</p>
     <p v-if="error" class="lab__error">{{ error }}</p>
@@ -95,6 +128,42 @@ $accent: #8a5f9a;
     background: radial-gradient(120% 90% at 50% 40%, transparent 45%, rgb(74 46 96 / 18%) 100%);
     pointer-events: none;
   }
+
+  /* 飞行时让页面空白处可以拖动转向，同时避免拖拽选中文字 */
+  &.is-flying {
+    cursor: crosshair;
+    user-select: none;
+
+    .lab__status,
+    .lab__error {
+      opacity: 0;
+    }
+  }
+
+  /* 指针锁定 / Maya 操作态：两侧面板让位给场景与按键提示 */
+  &.is-operating {
+    .lab__head {
+      opacity: 0;
+      transform: translateX(-56px);
+    }
+
+    .lab__cards {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(56px);
+    }
+
+    :deep(.route-switcher),
+    :deep(.scene-debug) {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  :deep(.route-switcher),
+  :deep(.scene-debug) {
+    transition: opacity 0.45s ease;
+  }
 }
 
 .lab__canvas {
@@ -113,6 +182,9 @@ $accent: #8a5f9a;
   max-width: 460px;
   padding: 15vh 0 0 6vw;
   pointer-events: none;
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
 }
 
 .lab__badge {
@@ -160,6 +232,9 @@ $accent: #8a5f9a;
   flex-direction: column;
   gap: 14px;
   width: 320px;
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
 }
 
 .lab-card {
@@ -257,6 +332,7 @@ $accent: #8a5f9a;
   color: $muted;
   font-size: 11px;
   letter-spacing: 0.1em;
+  transition: opacity 0.3s ease;
 }
 
 .lab__error {
@@ -267,6 +343,7 @@ $accent: #8a5f9a;
   margin: 0;
   color: #b4576b;
   font-size: 11px;
+  transition: opacity 0.3s ease;
 }
 
 .lab__fog {

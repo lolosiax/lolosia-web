@@ -10,13 +10,15 @@ import {
   PointsMaterial,
   Scene,
   Timer,
-  Vector2,
   Vector3,
   WebGLRenderer
 } from 'three'
 import { createTree, disposeTree } from '../scenery/tree'
 import { createCharacter } from '../character/character'
-import type { CharacterHandle } from '../character/character'
+import type { CharacterHandle, CharacterMode } from '../character/character'
+import { useSiteSceneStore } from '../store'
+import { createCameraRig } from './camera-rig'
+import type { CameraMode, CameraRig, FlyMode } from './camera-rig'
 import { createPetalField } from './petal-field'
 import { createKoi } from './koi'
 import { createWaterReflection } from './water-reflection'
@@ -37,8 +39,12 @@ const WATER_PALE = new Vector3(0.82, 0.76, 0.92)
 const REFLECTION_SCALE = 0.55
 
 export interface PetalSceneHandle {
+  readonly flyMode: FlyMode
   resize(width: number, height: number, dpr: number): void
   setPointer(clientX: number, clientY: number): void
+  setCharacterMode(mode: CharacterMode): void
+  setCameraMode(mode: CameraMode): void
+  setFlyMode(mode: FlyMode): void
   dispose(): void
 }
 
@@ -92,39 +98,8 @@ function addKoiToScene(scene: Scene, water: ReturnType<typeof createWaterSurface
   return koi
 }
 
-function loadCharacter(
-  scene: Scene,
-  url: string,
-  isDisposed: () => boolean,
-  onReady: (handle: CharacterHandle) => void
-): void {
-  void createCharacter(scene, url)
-    .then(handle => {
-      if (isDisposed()) {
-        handle.dispose()
-        return
-      }
-      onReady(handle)
-    })
-    .catch((err: unknown) => {
-      console.warn('角色载入失败', err)
-    })
-}
-
-/** 建起「水面 + 花瓣 + 浮尘」的实时场景，返回可释放的句柄。 */
-export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
-  const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR))
-  renderer.setSize(window.innerWidth, window.innerHeight, false)
-  renderer.setClearColor(0x000000, 0)
-
-  const scene = new Scene()
-  scene.fog = new Fog(0xe9e0f3, 10, 40)
-  const camera = new PerspectiveCamera(40, 1, 0.1, 80)
-  camera.position.set(0, BASE_Y, 4.2)
-  camera.lookAt(0, -0.4, 0)
-  camera.rotation.z += TILT
-
+/** 水面、花瓣、浮尘、倒影、树与灯光一次性装配好。 */
+function buildEnvironment(scene: Scene) {
   const water = createWaterSurface({ deep: WATER_DEEP, pale: WATER_PALE, sky: SKY })
   water.mesh.position.y = WATER_Y
   const petals = createPetalField(new Color(FOG.x, FOG.y, FOG.z))
@@ -150,18 +125,95 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
   key.position.set(-2.5, 4, 3.5)
   scene.add(key)
 
+  return { water, petals, dust, reflection, tree, koi }
+}
+
+function loadCharacter(
+  scene: Scene,
+  url: string,
+  isDisposed: () => boolean,
+  onReady: (handle: CharacterHandle) => void
+): void {
+  void createCharacter(scene, url)
+    .then(handle => {
+      if (isDisposed()) {
+        handle.dispose()
+        return
+      }
+      onReady(handle)
+    })
+    .catch((err: unknown) => {
+      console.warn('角色载入失败', err)
+    })
+}
+
+/** 创建 WebGL 渲染器，并把像素比压在上限内。 */
+function createRenderer(canvas: HTMLCanvasElement): WebGLRenderer {
+  const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' })
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR))
+  renderer.setSize(window.innerWidth, window.innerHeight, false)
+  renderer.setClearColor(0x000000, 0)
+  return renderer
+}
+
+/** 视差相机 + 飞行相机控制器；位置从 Pinia 里恢复。 */
+function createSceneCamera(
+  lockTarget: HTMLElement,
+  onActivityChange?: (active: boolean) => void,
+  onModeChange?: (mode: CameraMode) => void
+): { camera: PerspectiveCamera; rig: CameraRig } {
+  const camera = new PerspectiveCamera(40, 1, 0.1, 80)
+  camera.position.set(0, BASE_Y, 4.2)
+  camera.lookAt(0, LOOK_Y, 0)
+  camera.rotation.z += TILT
+
+  const store = useSiteSceneStore()
+  const rig = createCameraRig({
+    camera,
+    defaultPosition: new Vector3(0, BASE_Y, 4.2),
+    defaultLookAt: new Vector3(0, LOOK_Y, 0),
+    tilt: TILT,
+    pose: store.cameraPose,
+    lockTarget,
+    onPose: pose => store.saveCameraPose(pose),
+    onActivityChange,
+    onModeChange
+  })
+  return { camera, rig }
+}
+
+interface PetalSceneOptions {
+  onActivityChange?: (active: boolean) => void
+  onModeChange?: (mode: CameraMode) => void
+}
+
+/** 建起「水面 + 花瓣 + 浮尘」的实时场景，返回可释放的句柄。 */
+export function createPetalScene(canvas: HTMLCanvasElement, options: PetalSceneOptions = {}): PetalSceneHandle {
+  const renderer = createRenderer(canvas)
+
+  const scene = new Scene()
+  scene.fog = new Fog(0xe9e0f3, 10, 40)
+  const { camera, rig } = createSceneCamera(canvas, options.onActivityChange, options.onModeChange)
+  let pendingCharacterMode: CharacterMode = 'auto'
+
+  const { water, petals, dust, reflection, tree, koi } = buildEnvironment(scene)
+
   let character: CharacterHandle | null = null
   const footsteps = createFootsteps(water)
   const avatarUrl = import.meta.env.VITE_APP_AVATAR_URL ?? `${import.meta.env.BASE_URL}res/characters/moe/Moe.glb`
-  loadCharacter(scene, avatarUrl, () => disposed, handle => {
-    character = handle
-    footsteps.reset(handle.position)
-  })
+  loadCharacter(
+    scene,
+    avatarUrl,
+    () => disposed,
+    handle => {
+      character = handle
+      handle.setMode(pendingCharacterMode)
+      footsteps.reset(handle.position)
+    }
+  )
 
   const timer = new Timer()
   timer.connect(document)
-  const pointer = new Vector2()
-  const target = { x: 0, y: BASE_Y }
 
   let frameId = 0
   let disposed = false
@@ -186,10 +238,7 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
     const delta = Math.min(timer.getDelta(), 0.05)
     const elapsed = timer.getElapsed()
 
-    camera.position.x += (target.x - camera.position.x) * 0.05
-    camera.position.y += (target.y - camera.position.y) * 0.05
-    camera.lookAt(0, -0.4, 0)
-    camera.rotation.z += TILT
+    rig.update(delta)
 
     petals.update(elapsed, delta)
     water.update(elapsed)
@@ -231,14 +280,18 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
   }
 
   function setPointer(clientX: number, clientY: number): void {
-    pointer.set((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1)
-    target.x = pointer.x * 0.22
-    target.y = BASE_Y + pointer.y * 0.16
+    rig.setPointer((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1)
+  }
+
+  function setCharacterMode(mode: CharacterMode): void {
+    pendingCharacterMode = mode
+    character?.setMode(mode)
   }
 
   function dispose(): void {
     disposed = true
     stop()
+    rig.dispose()
     document.removeEventListener('visibilitychange', onVisibility)
     timer.dispose()
     character?.dispose()
@@ -256,5 +309,15 @@ export function createPetalScene(canvas: HTMLCanvasElement): PetalSceneHandle {
   document.addEventListener('visibilitychange', onVisibility)
   start()
 
-  return { resize, setPointer, dispose }
+  return {
+    get flyMode() {
+      return rig.flyMode
+    },
+    resize,
+    setPointer,
+    setCharacterMode,
+    setCameraMode: (mode: CameraMode) => rig.setMode(mode),
+    setFlyMode: (mode: FlyMode) => rig.setFlyMode(mode),
+    dispose
+  }
 }

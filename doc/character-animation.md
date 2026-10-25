@@ -1,6 +1,6 @@
 # 角色与动画（Moe）
 
-> 范围：角色模型管线、Toon 材质、状态机与步态、脚部对齐、外部剪辑（AFK）的烘焙与播放。
+> 范围：角色模型管线、Toon 材质、状态机与步态、脚部对齐、外部剪辑（AFK / 行走）的烘焙与播放。
 > 动骨物理单独一篇：[hair-physics.md](hair-physics.md)；
 > 场景、路由、运行环境见 [landing-scene.md](landing-scene.md)。
 
@@ -21,8 +21,8 @@
 - 模型不是开源内容，`.gitignore` 增加了 `public/res/characters/`
 - 部署时用 `VITE_APP_AVATAR_URL` 指向服务器地址
 - 走路由加载：`fetch` + `GLTFLoader.parseAsync`，避免 base 路径问题
-- 没有走路 clip，所以步态是程序化骨骼驱动（腿/膝/手臂/脊柱）
-- 需要更自然的动作时，导入 Mixamo 走路 clip 后再用 `AnimationMixer` 替换程序化步态，状态机可复用
+- 默认步态仍是程序化骨骼驱动（腿/膝/手臂/脊柱），保证不依赖外部剪辑也能走
+- 另有烘焙好的「行走2」剪辑，可在 `/lab` 调试面板切换对比（见 §5.1）
 
 ## 2. 角色参数
 
@@ -75,6 +75,17 @@ Assets/Kyubi closet/Moe/Animation/Base_Animation/Moe_Locomotion/
 - 动作独立成 JSON，`Moe.glb` 不用重导；换动作只替换这个文件。
 - 诊断入口：`/home/lab?afk=1` 固定播放 AFK，便于对照 Unity。
 - `ClipPlayer` 暴露 `readonly time`（剪辑内秒数），AFK 诊断与采样靠它对齐相位。
+
+### 5.1 行走剪辑（如梦工具箱 `行走2`）
+
+- 来源：`VRC工具箱v1.3.1_by如梦.unitypackage` → `Assets/Moyuer/Assets/Animation/行走2.anim`
+  （1.30 s、30 fps、原地循环；大腿摆幅小、胸腔反扭大、手臂贴身）。
+- 烘焙：沿用 AFK 的 `SampleAnimationClip` 管线，输出 `public/res/animations/moe_walk.json`
+  （49 根骨、39 帧、`worldDelta: true`，与 AFK 同一套骨骼名单）。
+- 与 AFK 的差别：这是 humanoid muscle 剪辑，带 `LeftFootT/Q` 等 IK 目标；`SampleAnimationClip`
+  不跑 IK pass，脚掌贴地会比原剪辑略差（踝高浮动约 4 cm），需要时用 `solveFoot` 补。
+- 用法：`/lab` 右侧调试面板切「动画剪辑」。此时角色停在原地循环播放，不跑状态机与 IK；
+  切回「自动漫步」时 `ClipPlayer.reset()` 还原未被程序化步态覆盖的骨骼（手指、头等）。
 
 ## 6. 在 Unity Play 模式触发 AFK
 
@@ -130,7 +141,7 @@ Assets/Kyubi closet/Moe/Animation/Base_Animation/Moe_Locomotion/
 
 ## 8. 待办
 
-- 用 Mixamo 走路 clip 替换程序化步态，接入 `AnimationMixer`；状态机与落点逻辑可复用。
+- 行走剪辑目前只用于调试对比；要让自动漫步也走剪辑，需要先处理脚底打滑、`idle ↔ walk` 淡化与转向混合。
 - 动作烘焙脚本目前是临时文件：需要长期维护时，建议固化成 `tools/` 下的一次性脚本（输出仍不入库）。
 
 ## 9. 素材授权
@@ -140,5 +151,6 @@ Assets/Kyubi closet/Moe/Animation/Base_Animation/Moe_Locomotion/
 
 - 授权按原 Avatar 的条款执行（该 Avatar 适用 VN3 等角色授权协议，具体版本以原始发布页为准），
   与本仓库的 MIT **不是一回事**。
+- `行走2` 来自「如梦工具箱」的示例动作；站点公开使用前需确认其原始授权范围。
 - 二次分发、商用或改作他用前，请自行确认协议的适用范围。
 - 详细声明见 [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md)。

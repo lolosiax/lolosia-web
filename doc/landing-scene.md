@@ -128,6 +128,7 @@ LandingLabPage.vue
             ├─ createTree()            // 程序化远景树
             ├─ createKoi()             // 随机跃水的锦鲤 + 水花
             ├─ createCharacter()       // GLTF + Toon + 状态机（落点存 Pinia）
+            ├─ createCameraRig()       // 默认视差 / Minecraft / Maya 三种相机
             └─ createDust()            // 浮尘 Points
 ```
 
@@ -136,8 +137,9 @@ LandingLabPage.vue
 | 文件 | 职责 |
 |---|---|
 | `src/modules/site/composables/use-petal-scene.ts` | 生命周期、ResizeObserver、pointer 事件、WebGL 能力检测 |
-| `src/modules/site/store.ts` | 场景 Pinia store：角色落点（`localStorage` 持久化） |
-| `src/modules/site/gpu/petal-scene.ts` | 场景装配、相机、灯光、帧循环、脚步涟漪、反射调用 |
+| `src/modules/site/store.ts` | 场景 Pinia store：角色落点 + 飞行相机位置（`localStorage` 持久化） |
+| `src/modules/site/gpu/petal-scene.ts` | 场景装配、灯光、帧循环、脚步涟漪、反射调用 |
+| `src/modules/site/gpu/camera-rig.ts` | 相机控制器：默认视差、Minecraft 创造飞行、Maya DCC 导航 |
 | `src/modules/site/gpu/petal-field.ts` | `InstancedMesh` 花瓣，50 片，自定义 ShaderMaterial |
 | `src/modules/site/gpu/water-surface.ts` | 水面：多重正弦波 + 涟漪 + 菲涅尔 + 平面反射采样 + 静水区 |
 | `src/modules/site/gpu/water-reflection.ts` | 平面反射：镜像相机、纹理矩阵、半分辨率 RT、隔帧渲染 |
@@ -147,11 +149,37 @@ LandingLabPage.vue
 | `src/modules/site/character/clip-animation.ts` | 外部剪辑播放器：按名匹配骨骼、世界增量 × 镜像换算、fps 插值循环 |
 | `src/modules/site/character/hair-physics.ts` | 动骨链参数与 1/60 s 调度（求解器见 `physbone-solver.ts`） |
 | `src/modules/site/character/physbone-solver.ts` | 弹簧骨求解器（pull/spring/stiffness/gravity/immobile/limit） |
-| `src/modules/site/pages/LandingLabPage.vue` | 画布、标题、卡片、状态栏、雾化入场 |
+| `src/modules/site/pages/LandingLabPage.vue` | 画布、标题、卡片、状态栏、雾化入场、调试面板挂载 |
+| `src/modules/site/components/shared/SceneDebugPanel.vue` | 角色/相机模式按钮；固定在右下角 |
+| `src/modules/site/components/shared/SceneControlHud.vue` | 左下角 3A 风格按键提示（键帽 + 鼠标图标），随操作态切换文案 |
+| `src/modules/site/components/shared/SceneModeWheel.vue` | 屏幕正中三列模式窗（鼠标不可点，高亮块滑动选择） |
+| `src/modules/site/composables/use-mode-wheel.ts` | 按住 3 点 4 打开模式窗，重复点 4 平移高亮，松开 3 应用 |
 | `src/modules/site/components/shared/RouteSwitcher.vue` | 三页切换胶囊按钮 |
 
 角色与动骨的细节分别见 [character-animation.md](character-animation.md)、
 [hair-physics.md](hair-physics.md)。
+
+### 相机与调试面板
+
+| 模式 | 操作 |
+|---|---|
+| 默认 | 跟随指针做轻微视差，保持 `TILT` 斜构图 |
+| 飞行 · 创造 MC | 点击画布锁定指针；WASD 水平移动；Space / Shift 升降；鼠标转向；Esc 退出锁定；按住 Alt 临时释放、松开恢复 |
+| 飞行 · Maya | 点击画布进入操作态；Alt + 左键环绕、中键平移、右键推拉；滚轮缩放；Esc 或窗口失焦退回默认相机 |
+
+- 进入操作态（MC 指针锁定 / Maya 首次点击）时左右两侧面板向两侧淡出，左下角显示按键提示；
+  锁定失败时保留操作态，退回拖动转向。
+- MC 按住 Alt 时两侧面板重新出现，可直接点界面；松开 Alt 若指针在场景空白处则重新锁定，
+  若停在按钮/链接/卡片上则保持释放，点一下场景再锁定。
+- 非锁定状态左下角提示「点击屏幕开始操作」；Maya 无论是否操作态都显示 Alt + 鼠标键位。
+- `3 + 4` 打开屏幕正中的模式窗（`pointer-events: none`）：按住 3 点 4 弹出、高亮停在当前模式且不切换；
+  再点 4 高亮滑到下一项；松开 3 应用，Esc 或窗口失焦取消。列表为 1 播放模式、2 MC、3 Maya。
+  模式窗只切相机，角色仍保持调试面板里选的自动漫步 / 动画剪辑；同属飞行的 MC 与 Maya 互切时原地换算。
+- `setCameraMode` / `setFlyMode` 由 `usePetalScene` 透传到 `SceneDebugPanel`；相机内部切回默认时经
+  `onModeChange` 回调同步 Vue 状态。
+- 只在画布空白处接管指针；`button` / `a` / `[data-scene-ui]` 内的点击不参与拖拽。
+- 飞行相机每 1 s 与离开飞行时写入 `site-scene.cameraPose`，下次进入飞行恢复位置与朝向。
+- 调试面板固定在右下角，不提供收起；进入操作态时随两侧界面一起淡出。
 
 ---
 
