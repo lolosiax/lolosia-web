@@ -18,6 +18,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createHairPhysics } from './hair-physics'
 import type { HairPhysics } from './hair-physics'
 import { createClipPlayer, loadClip, type ClipPlayer } from './clip-animation'
+import { AFK_CLIP_URL, applyGaitClip, blendGaitWeight, createWalkControl, type GaitPlayer } from './gait-clips'
+import { bendElbowsInward } from './idle-pose'
 import { useSiteSceneStore } from '../store'
 import type { CharacterPose } from '../store'
 
@@ -27,6 +29,18 @@ const IDLE_MIN = 1.2
 const IDLE_MAX = 3.6
 const BOUNDS = { xMin: -2, xMax: 1.2, zNear: -0.6, zFar: -2 }
 const ARM_DROP = 1.05
+/** 大臂在垂下的基础上再向身体中线收 8°。 */
+const ARM_INWARD = (8 * Math.PI) / 180
+const FINGER_CURL = 0.2
+const FINGER_PARTS = ['Index', 'Middle', 'Ring', 'Little', 'Thumb'] as const
+const FINGER_JOINTS = ['Proximal', 'Intermediate', 'Distal'] as const
+const FINGER_SIDES = ['L', 'R'] as const
+const FINGER_AXIS = new Vector3(0, 0, 1)
+const FINGER_AXIS_LEFT = new Vector3(0, 0, -1)
+/** 每次选目标点时抽多少个候选：按「与当前朝向的夹角」加权，钝角比锐角更容易被选中。 */
+const TARGET_SAMPLES = 12
+/** 太近的目标点没有意义，直接跳过。 */
+const MIN_TARGET_DISTANCE = 0.4
 /** 落点写回 Pinia 的间隔（秒）。每帧写会在 localStorage 上打出大量小写入。 */
 const POSE_SAVE_INTERVAL = 1.5
 /** 步态周期（秒）：一次循环 = 左右各迈一步。步幅由移动速度反推，保证脚不打滑。 */
@@ -35,13 +49,9 @@ const LEG_CYCLE_SECONDS = 1
 const STANCE_RATIO = 0.5
 /** 摆动相抬脚高度（米，角色局部坐标）。 */
 const STEP_LIFT = 0.05
-/** AFK 动画（Unity Moe_AFK_Loop_by_Levin 烘焙结果）。 */
-const AFK_CLIP_URL = `${import.meta.env.BASE_URL}res/animations/moe_afk.json`
-/** 行走剪辑（Unity 行走2 重定向烘焙结果），调试面板用来和程序化步态对比。 */
-const WALK_CLIP_URL = `${import.meta.env.BASE_URL}res/animations/moe_walk.json`
 
 export type CharacterState = 'idle' | 'walk'
-/** auto：程序化步态 + 自动漫步；clip：原地循环播放烘焙行走剪辑。 */
+/** auto：自动漫步时随机选一个移动剪辑，剪辑缺失时退回程序化步态；clip：原地循环播放烘焙行走剪辑。 */
 export type CharacterMode = 'auto' | 'clip'
 
 export interface CharacterHandle {
@@ -65,7 +75,7 @@ interface AnimatedBone {
 type Rig = Record<
   'leftLeg' | 'rightLeg' | 'leftKnee' | 'rightKnee' | 'leftArm' | 'rightArm' | 'leftElbow' | 'rightElbow' | 'spine',
   AnimatedBone | null
->
+> & { fingers: AnimatedBone[] }
 
 /** 一条腿做 IK 需要的常量：骨骼、静止姿态、骨长与静止脚踝位置。 */
 interface IkLeg {
@@ -93,6 +103,42 @@ function insideBounds(x: number, z: number): boolean {
   return x >= BOUNDS.xMin && x <= BOUNDS.xMax && z >= BOUNDS.zFar && z <= BOUNDS.zNear
 }
 
+/** 两个朝向之间的最小夹角（0..π）。 */
+function angleGap(from: number, to: number): number {
+  let diff = to - from
+  while (diff > Math.PI) diff -= Math.PI * 2
+  while (diff < -Math.PI) diff += Math.PI * 2
+  return Math.abs(diff)
+}
+
+/**
+ * 抽若干候选点，按「朝当前方向的直行程度」加权：钝角（接近直行）权重高、锐角（急折）权重低。
+ * 返回选中点与直线距离，距离用来决定这次是否允许跑步。
+ */
+function chooseTarget(position: Vector3, yaw: number): { x: number; z: number; distance: number } {
+  let bestX = position.x
+  let bestZ = position.z
+  let bestDistance = 0
+  let bestScore = -1
+
+  for (let i = 0; i < TARGET_SAMPLES; i++) {
+    const x = between(BOUNDS.xMin, BOUNDS.xMax)
+    const z = between(BOUNDS.zFar, BOUNDS.zNear)
+    const distance = Math.hypot(x - position.x, z - position.z)
+    if (distance < MIN_TARGET_DISTANCE) continue
+    const turn = angleGap(yaw, Math.atan2(x - position.x, z - position.z))
+    const straightness = 1 - turn / Math.PI
+    const score = (0.08 + straightness * straightness) * Math.random()
+    if (score <= bestScore) continue
+    bestScore = score
+    bestX = x
+    bestZ = z
+    bestDistance = distance
+  }
+
+  return { x: bestX, z: bestZ, distance: bestDistance }
+}
+
 function findBone(root: Group, name: string): Object3D | null {
   const wanted = name.replace(/[\s_.-]/g, '').toLowerCase()
   let found: Object3D | null = null
@@ -102,7 +148,7 @@ function findBone(root: Group, name: string): Object3D | null {
   return found
 }
 
-function buildBone(root: Group, name: string, dropAngle = 0): AnimatedBone | null {
+function buildBone(root: Group, name: string, dropAngle = 0, bendWorld = new Vector3(1, 0, 0)): AnimatedBone | null {
   const node = findBone(root, name)
   if (!node) return null
 
@@ -110,23 +156,31 @@ function buildBone(root: Group, name: string, dropAngle = 0): AnimatedBone | nul
   const world = node.getWorldQuaternion(new Quaternion())
   const dropAxis = dropAngle ? new Vector3(0, 0, 1).applyQuaternion(world.clone().invert()).normalize() : null
   const posed = dropAxis ? world.clone().multiply(new Quaternion().setFromAxisAngle(dropAxis, dropAngle)) : world
-  const bendAxis = new Vector3(1, 0, 0).applyQuaternion(posed.clone().invert()).normalize()
+  const bendAxis = bendWorld.clone().applyQuaternion(posed.clone().invert()).normalize()
 
   return { node, rest, bendAxis, dropAxis, dropAngle }
 }
 
 function buildRig(root: Group): Rig {
   root.updateMatrixWorld(true)
+  const fingers = FINGER_SIDES.flatMap(side =>
+    FINGER_PARTS.flatMap(part =>
+      FINGER_JOINTS.map(joint =>
+        buildBone(root, `${part}_${joint}_${side}`, 0, side === 'L' ? FINGER_AXIS_LEFT : FINGER_AXIS)
+      )
+    )
+  ).filter((bone): bone is AnimatedBone => bone !== null)
   return {
     leftLeg: buildBone(root, 'Left leg'),
     rightLeg: buildBone(root, 'Right leg'),
     leftKnee: buildBone(root, 'Left knee'),
     rightKnee: buildBone(root, 'Right knee'),
-    leftArm: buildBone(root, 'Left arm', -ARM_DROP),
-    rightArm: buildBone(root, 'Right arm', ARM_DROP),
+    leftArm: buildBone(root, 'Left arm', -ARM_DROP - ARM_INWARD),
+    rightArm: buildBone(root, 'Right arm', ARM_DROP + ARM_INWARD),
     leftElbow: buildBone(root, 'Left elbow'),
     rightElbow: buildBone(root, 'Right elbow'),
-    spine: buildBone(root, 'Spine')
+    spine: buildBone(root, 'Spine'),
+    fingers
   }
 }
 
@@ -446,51 +500,6 @@ async function prepareCharacter(scene: Scene, url: string): Promise<CharacterCor
   }
 }
 
-interface WalkControl {
-  readonly player: ClipPlayer | null
-  readonly mode: CharacterMode
-  setMode(mode: CharacterMode): void
-}
-
-/** 行走剪辑必须在骨骼静止时创建播放器，因此这里统一负责加载与开关。 */
-async function createWalkControl(root: Object3D, afk: boolean, onEnter: () => void): Promise<WalkControl> {
-  let player: ClipPlayer | null = null
-  if (!afk) {
-    try {
-      const clip = await loadClip(WALK_CLIP_URL)
-      player = clip ? createClipPlayer(root, clip) : null
-      if (clip && !player) console.warn('行走剪辑与骨骼不匹配，保持程序化步态')
-    } catch (err) {
-      console.warn('行走剪辑载入失败，保持程序化步态', err)
-    }
-  }
-  let mode: CharacterMode = 'auto'
-
-  function setMode(next: CharacterMode): void {
-    if (afk || next === mode) return
-    if (next === 'clip' && !player) {
-      console.warn('行走剪辑未就绪，保持自动步态')
-      return
-    }
-    mode = next
-    if (mode === 'clip') {
-      onEnter()
-      return
-    }
-    // 退出剪辑时把未被程序化步态覆盖的骨骼（手指、头等）还原，避免残留上一帧。
-    player?.reset()
-    root.updateMatrixWorld(true)
-  }
-
-  return {
-    player,
-    get mode() {
-      return mode
-    },
-    setMode
-  }
-}
-
 interface Persistence {
   tick(delta: number): void
   save(): void
@@ -534,8 +543,9 @@ function animateCharacter(
   const swing = Math.sin(motion.phase) * 0.32 * motion.gait
   pose(rig.leftArm, -swing)
   pose(rig.rightArm, swing)
-  pose(rig.leftElbow, 0.18 + Math.max(0, swing) * 0.25)
-  pose(rig.rightElbow, 0.18 + Math.max(0, -swing) * 0.25)
+  pose(rig.leftElbow, Math.max(0, swing) * 0.25)
+  pose(rig.rightElbow, Math.max(0, -swing) * 0.25)
+  for (const finger of rig.fingers) pose(finger, FINGER_CURL)
   pose(rig.spine, Math.sin(elapsed * 1.5) * 0.015 + Math.sin(motion.phase * 2) * 0.025 * motion.gait)
 
   if (hasIk) return
@@ -579,16 +589,24 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
   let state: CharacterState = 'idle'
   let idleFor = between(0.6, 1.8)
   let yaw = core.initial.yaw
+  /** 本轮 walk 随机选中的移动剪辑；null 表示退回程序化步态。 */
+  let gait: GaitPlayer | null = null
+  /** 剪辑混合权重，0 = 程序化步态，1 = 完全由剪辑驱动。 */
+  let gaitWeight = 0
   const motion: MotionPhase = { gait: 0, phase: 0 }
 
   const { afk, player: clipPlayer } = await setupAfkMode(root, () => state)
   const walk = await createWalkControl(root, afk, () => {
     state = 'idle'
+    gait = null
+    gaitWeight = 0
   })
   const persistence = createPersistence(store, () => ({ x: position.x, z: position.z, yaw }))
 
   function pickTarget(): void {
-    target.set(between(BOUNDS.xMin, BOUNDS.xMax), 0, between(BOUNDS.zFar, BOUNDS.zNear))
+    const picked = chooseTarget(position, yaw)
+    target.set(picked.x, 0, picked.z)
+    gait = walk.pickGait(picked.distance)
     state = 'walk'
   }
 
@@ -606,7 +624,7 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
     while (turn > Math.PI) turn -= Math.PI * 2
     while (turn < -Math.PI) turn += Math.PI * 2
     yaw += turn * Math.min(1, delta * 7)
-    position.addScaledVector(forward, Math.min(WALK_SPEED * delta, distance))
+    position.addScaledVector(forward, Math.min((gait?.speed ?? WALK_SPEED) * delta, distance))
   }
 
   const footPlan: FootPlan = { position, yaw: 0, waterY: 0, weight: 0 }
@@ -621,6 +639,12 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
     hair?.update(delta)
     updateFeet(leftFoot, rightFoot, leftFootPos, rightFootPos)
     persistence.tick(delta)
+  }
+
+  /** 程序化手臂在根节点摆好后内折一点；行走剪辑随后会覆盖手臂骨骼。 */
+  function bendIdleArms(): void {
+    if (afk) return
+    bendElbowsInward(root, rig.leftElbow?.node ?? null, rig.rightElbow?.node ?? null)
   }
 
   function update(delta: number, elapsed: number, waterY: number): void {
@@ -640,11 +664,23 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
 
     if (!afk) animateCharacter(rig, state, motion, delta, elapsed, Boolean(ikLeft && ikRight))
 
-    const bob = afk ? 0 : state === 'walk' ? Math.abs(Math.sin(motion.phase)) * 0.02 : Math.sin(elapsed * 1.4) * 0.007
+    // 剪辑权重跟上状态；程序化的起伏/侧倾按剩余权重缩放，避免与剪辑叠加。
+    const walking = !afk && state === 'walk' && gait !== null
+    gaitWeight = blendGaitWeight(gaitWeight, walking, delta)
+    const blend = 1 - gaitWeight
+
+    const bob = afk
+      ? 0
+      : state === 'walk'
+        ? Math.abs(Math.sin(motion.phase)) * 0.02 * blend
+        : Math.sin(elapsed * 1.4) * 0.007
     root.position.set(position.x, waterY + bob, position.z)
     root.quaternion.setFromAxisAngle(yawAxis, yaw)
-    root.rotateZ(state === 'walk' ? Math.sin(motion.phase) * 0.02 : 0)
+    root.rotateZ(state === 'walk' ? Math.sin(motion.phase) * 0.02 * blend : 0)
     root.updateMatrixWorld(true)
+
+    // 程序化手臂在根节点摆好后内折一点；随后的行走剪辑（若有）会覆盖手臂骨骼。
+    bendIdleArms()
 
     // IK 需要角色世界矩阵已更新，因此放在根节点摆好之后。
     if (afk) {
@@ -658,6 +694,10 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
       solveFoot(ikRight, motion.phase + Math.PI, footPlan)
       root.updateMatrixWorld(true)
     }
+
+    // 移动剪辑放在 IK 之后混合：权重归零后还原骨骼，交还给程序化步态。
+    gait = applyGaitClip(gait, gaitWeight, walking, delta, root)
+    if (!gait) gaitWeight = 0
 
     // 头发/尾巴/耳朵/胸部：只动 Head、Hips 子树，放在 IK 之后执行。
     hair?.update(delta)

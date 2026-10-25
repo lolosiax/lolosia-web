@@ -29,7 +29,7 @@
 | 参数 | 值 |
 |---|---|
 | 目标身高 | 1.15 世界单位 |
-| 状态机 | `idle`（1.2–3.6 s）↔ `walk`（0.36 单位/秒） |
+| 状态机 | `idle`（1.2–3.6 s）↔ `walk`（随机剪辑 0.54 / 0.42 / 0.44 单位/秒，剪辑缺失时程序化 0.36） |
 | 活动范围 | x ∈ [-2, 1.2]，z ∈ [-2, -0.6] |
 | 脚底对齐 | 缩放后 `model.position.y -= box.min.y` |
 | 站立高度 | `WATER_Y + bob`（bob 走路 ≤0.02，idle ±0.007） |
@@ -42,7 +42,8 @@
 
 ## 3. 状态机与脚部对齐
 
-- `character.ts` 负责 GLB 加载、Toon 材质、程序化步态、`idle`/`walk` 状态机与落点恢复。
+- `character.ts` 负责 GLB 加载、Toon 材质、程序化步态、`idle`/`walk` 状态机与落点恢复；
+  `gait-clips.ts` 负责移动剪辑的载入、随机选择与 `idle ↔ walk` 的权重混合。
 - 站立高度跟水面走：`WATER_Y + bob`；走路时 bob ≤ 0.02，idle 时 ±0.007。
 - 脚底对齐用缩放后的包围盒：`model.position.y -= box.min.y`，避免脚悬空。
 - 脚步涟漪的位置取**脚踝骨骼**的 `getWorldPosition`，不要改成角色根节点。
@@ -76,16 +77,38 @@ Assets/Kyubi closet/Moe/Animation/Base_Animation/Moe_Locomotion/
 - 诊断入口：`/home/lab?afk=1` 固定播放 AFK，便于对照 Unity。
 - `ClipPlayer` 暴露 `readonly time`（剪辑内秒数），AFK 诊断与采样靠它对齐相位。
 
-### 5.1 行走剪辑（如梦工具箱 `行走2`）
+### 5.1 移动剪辑（如梦工具箱 `行走1` / `行走2` / `跑步`）
 
-- 来源：`VRC工具箱v1.3.1_by如梦.unitypackage` → `Assets/Moyuer/Assets/Animation/行走2.anim`
-  （1.30 s、30 fps、原地循环；大腿摆幅小、胸腔反扭大、手臂贴身）。
-- 烘焙：沿用 AFK 的 `SampleAnimationClip` 管线，输出 `public/res/animations/moe_walk.json`
-  （49 根骨、39 帧、`worldDelta: true`，与 AFK 同一套骨骼名单）。
+- 来源：`VRC工具箱v1.3.1_by如梦.unitypackage` → `Assets/Moyuer/Assets/Animation/`；
+  本机也可直接从已安装包 `E:\Unity\VRChat\Airi\Packages\cc.moyuer.avatartoolkit\Editor\Assets\Animation\` 取用。
+- 烘焙：沿用 AFK 的 `SampleAnimationClip` 管线（FBX_MoeAvatar、30 fps、49 根骨、`worldDelta: true`）：
+
+  | 剪辑 | 源时长 | 输出 | 帧数 | 说明 |
+  |---|---|---|---|---|
+  | `行走1` | 1.36 s（25 fps 源） | `moe_walk1.json` | 41 | 步幅与摆臂比 `行走2` 略大 |
+  | `行走2` | 1.30 s（30 fps 源） | `moe_walk.json` | 39 | 小步幅、大胸腔反扭、手臂贴身 |
+  | `跑步` | 0.933 s（30 fps 源） | `moe_run.json` | 28 | 髋部起伏约 9 cm，步频更高 |
+
+- 三个文件骨骼名单完全一致，可直接做随机状态机或按速度混合；帧数由 `RoundToInt(length × 30)` 决定。
 - 与 AFK 的差别：这是 humanoid muscle 剪辑，带 `LeftFootT/Q` 等 IK 目标；`SampleAnimationClip`
   不跑 IK pass，脚掌贴地会比原剪辑略差（踝高浮动约 4 cm），需要时用 `solveFoot` 补。
-- 用法：`/lab` 右侧调试面板切「动画剪辑」。此时角色停在原地循环播放，不跑状态机与 IK；
-  切回「自动漫步」时 `ClipPlayer.reset()` 还原未被程序化步态覆盖的骨骼（手指、头等）。
+- 自动漫步的步态选择：按权重抽样（行走1 0.4、行走2 0.45、跑步 0.6）；上一次用过的同一剪辑权重 ×3，
+  提高连续性但不锁死，其他步态仍会出现。
+- 跑步只在目标直线距离 ≥ 2 时可选；选中后位移速度与播放速率同时乘 `random(1.5, 3)`，
+  实际跑速约 0.66–1.32 单位/秒，明显快于行走，且支撑脚不打滑。
+- 目标点从 12 个候选里按「与当前朝向的直行程度」加权：直行（路径内角为钝角）优先，
+  急折返（锐角）权重降到约 1/13，角色更倾向于顺着原方向继续走。
+- 剪辑与程序化步态/IK 用 `ClipPlayer.update(delta, weight)` 交叉淡化：第一次更新时记录进入剪辑前的姿态
+  （`base`），权重递减时在 `base` 与剪辑姿态之间插值，归零后 `reset()` 也回到 `base`；
+  不会停在剪辑末帧再硬切 bind，避免跑步退出时的“回弹闪烁”。
+- 播放时 `target = 根节点朝向 × Δ × 根局部静止旋转`：`rest` 存的是相对根节点的静止姿态，
+  角色转身时骨骼会跟着转（旧实现直接用世界静止姿态，会把身体锁死在加载时的朝向）。
+- 脚部位移实测（Python 离线采样 GLB 骨骼，1.15 单位身高）：支撑相里脚相对髋部后退
+  行走1 0.44、行走2 0.33、跑步 0.24 单位；按「后退距离 ÷ 支撑时长」反推基础移动速度
+  0.54 / 0.42 / 0.44 单位/秒，这样平移时支撑脚相对地面不动。跑步步频更高但步幅更小，
+  基础速度与行走相近，靠上面的倍率加速。
+- 调试面板的「动画剪辑」固定播放 `moe_walk.json`，原地不跑状态机与 IK；
+  切回「自动漫步」时所有剪辑播放器都会 `reset()`，还原未被程序化步态覆盖的骨骼（手指、头等）。
 
 ## 6. 在 Unity Play 模式触发 AFK
 
@@ -141,7 +164,7 @@ Assets/Kyubi closet/Moe/Animation/Base_Animation/Moe_Locomotion/
 
 ## 8. 待办
 
-- 行走剪辑目前只用于调试对比；要让自动漫步也走剪辑，需要先处理脚底打滑、`idle ↔ walk` 淡化与转向混合。
+- 自动漫步已随机使用三个剪辑并做 `idle ↔ walk` 淡化；转弯仍是瞬间切相位，急转弯时步态可能对不上朝向。
 - 动作烘焙脚本目前是临时文件：需要长期维护时，建议固化成 `tools/` 下的一次性脚本（输出仍不入库）。
 
 ## 9. 素材授权
