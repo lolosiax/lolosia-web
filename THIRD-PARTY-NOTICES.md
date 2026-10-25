@@ -37,7 +37,7 @@ DataV.GeoAtlas 的边界数据源自高德开放平台，其使用与再分发�
   本项目与 VRChat Inc. 无关联，也未获其背书；
 - 上文的 MIT 许可仅覆盖本仓库自身代码，不构成对 VRChat 知识产权或其 SDK 许可条款的任何授权。
 
-模型的来源与分发限制见 [doc/landing-scene.md](doc/landing-scene.md) 的「角色模型」一节；模型文件不入库。
+模型的来源与分发限制见 [doc/character-animation.md](doc/character-animation.md) 的「资产管线」一节；模型文件不入库。
 
 ## 5. 角色模型与动画素材
 

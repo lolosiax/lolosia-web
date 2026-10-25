@@ -23,7 +23,7 @@ Vue 3 单页应用 —— 与 [lolosia-backend](https://github.com/lolosiax/lolo
 - **运行形态**：构建产物部署于 `/home/`，默认由后端作为静态资源直接提供；开发时前端监听 5005，后端监听 7129，跨端口直连
 - **结构**：`core/` 仅包含布局、路由、请求、状态与 UI 原语，业务代码全部位于 `modules/<域>/`，依赖方向单向
 
-> 第三方数据、在线服务与 VRChat 参数兼容声明见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) · 上线前验收清单见 [doc/test-checklist.md](doc/test-checklist.md)
+> 工程文档导航见 [doc/README.md](doc/README.md) · 第三方数据、在线服务与 VRChat 参数兼容声明见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) · 上线前验收清单见 [doc/test-checklist.md](doc/test-checklist.md)
 
 ## 特性
 
