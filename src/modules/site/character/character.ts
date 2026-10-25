@@ -186,6 +186,14 @@ function buildRig(root: Group): Rig {
 
 const tempQuat = new Quaternion()
 
+/** 程序化姿态每帧覆写的骨骼：剪辑淡化时从当前姿态插值，不能从 bind 出发（会张开成 A-pose）。 */
+function proceduralBones(rig: Rig): Set<Object3D> {
+  const bones = [rig.leftLeg, rig.rightLeg, rig.leftKnee, rig.rightKnee, rig.leftArm, rig.rightArm]
+  bones.push(rig.leftElbow, rig.rightElbow, rig.spine)
+  const nodes = bones.filter((bone): bone is AnimatedBone => bone !== null).map(bone => bone.node)
+  return new Set([...nodes, ...rig.fingers.map(finger => finger.node)])
+}
+
 function buildLegRig(root: Group, rig: Rig): { left: IkLeg | null; right: IkLeg | null } {
   const left = buildIkLeg(
     findBone(root, 'Left leg'),
@@ -562,11 +570,16 @@ export async function createCharacter(scene: Scene, url: string): Promise<Charac
 
   const { afk, player: clipPlayer } = await setupAfkMode(root, () => state)
   const frame = createLocomotionFrame(core, motion, footPlan, clipPlayer, afk)
-  const walk = await createWalkControl(root, afk, () => {
-    state = 'idle'
-    frame.gait = null
-    frame.gaitWeight = 0
-  })
+  const walk = await createWalkControl(
+    root,
+    afk,
+    () => {
+      state = 'idle'
+      frame.gait = null
+      frame.gaitWeight = 0
+    },
+    proceduralBones(rig)
+  )
   const persistence = createPersistence(store, () => ({ x: position.x, z: position.z, yaw }))
 
   function pickTarget(): void {

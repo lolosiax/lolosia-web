@@ -61,12 +61,12 @@ interface GaitEntry {
 }
 
 /** 三个移动剪辑并行载入；单个失败不影响其余剪辑与程序化步态。 */
-async function loadGaitPlayers(root: Object3D): Promise<GaitEntry[]> {
+async function loadGaitPlayers(root: Object3D, procedural?: ReadonlySet<Object3D>): Promise<GaitEntry[]> {
   const loaded = await Promise.all(
     GAIT_CLIPS.map(async entry => {
       try {
         const clip = await loadClip(entry.url)
-        const player = clip ? createClipPlayer(root, clip) : null
+        const player = clip ? createClipPlayer(root, clip, procedural) : null
         return player ? { url: entry.url, speed: entry.speed, weight: entry.weight, player } : null
       } catch (err) {
         console.warn('移动剪辑载入失败，退回程序化步态', entry.url, err)
@@ -78,8 +78,13 @@ async function loadGaitPlayers(root: Object3D): Promise<GaitEntry[]> {
 }
 
 /** 移动剪辑必须在骨骼静止时创建播放器，因此这里统一负责加载与开关。 */
-export async function createWalkControl(root: Object3D, afk: boolean, onEnter: () => void): Promise<WalkControl> {
-  const gaits = afk ? [] : await loadGaitPlayers(root)
+export async function createWalkControl(
+  root: Object3D,
+  afk: boolean,
+  onEnter: () => void,
+  procedural?: ReadonlySet<Object3D>
+): Promise<WalkControl> {
+  const gaits = afk ? [] : await loadGaitPlayers(root, procedural)
   const player = gaits.find(entry => entry.url === WALK_CLIP_URL)?.player ?? null
   if (!afk && !player) console.warn('行走剪辑与骨骼不匹配，保持程序化步态')
   let mode: CharacterMode = 'auto'

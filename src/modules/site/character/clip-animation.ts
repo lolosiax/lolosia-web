@@ -33,10 +33,12 @@ interface Track {
   /**
    * 构造时的局部姿态（骨骼静止姿态）。
    *
-   * 只用于显式 `reset()`（切换调试模式时把剪辑写过的骨骼交还给静止姿态）。
-   * 淡入淡出不走它：静止姿态是 A/T-pose，拿它当落点会看到每个动作收尾时骨架「张开一下」。
+   * 程序化骨架之外的骨骼（头、颈、肩、手、髋）淡入淡出都以它为落点：
+   * 每次覆写而不是在当前姿态上叠加，头颈上的注意力遮罩才不会逐帧累积。
    */
   bind: Quaternion
+  /** 该骨骼是否由程序化姿态/IK 每帧写入（手臂、腿、脊柱、手指）。 */
+  procedural: boolean
   rot: number[][]
   depth: number
 }
@@ -74,7 +76,11 @@ export async function loadClip(url: string): Promise<ClipData | null> {
  * 所以要先做镜像换算 (x, y, z, w) → (x, -y, -z, w)，否则四肢会朝反方向摆
  * （典型表现：手臂甩到背后/头顶，腿抬反）。
  */
-export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | null {
+export function createClipPlayer(
+  root: Object3D,
+  clip: ClipData,
+  procedural?: ReadonlySet<Object3D>
+): ClipPlayer | null {
   if (!clip.bones.length || clip.fps <= 0 || clip.duration <= 0) return null
 
   const lookup = new Map<string, Object3D>()
@@ -90,6 +96,7 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
         node,
         rest: new Quaternion(),
         bind: node.quaternion.clone(),
+        procedural: procedural?.has(node) ?? false,
         rot: bone.rot,
         depth: depthOf(node)
       })
@@ -140,10 +147,11 @@ export function createClipPlayer(root: Object3D, clip: ClipData): ClipPlayer | n
         target.copy(rotA)
       }
 
-      // 从「本帧的程序化/IK 姿态」向剪辑姿态插值：两端都是自然姿态，
-      // 不会经过 bind（A/T-pose），收尾时也就不会出现骨架张开。
+      // 程序化骨骼从「本帧姿态」开始插值，两端都是自然姿态，不经过 A/T-pose；
+      // 其余骨骼（头颈肩手髋）每帧从 bind 覆写，避免把注意力遮罩当成基准逐帧累积。
       if (blend >= 1) track.node.quaternion.copy(target)
-      else track.node.quaternion.slerp(target, blend)
+      else if (track.procedural) track.node.quaternion.slerp(target, blend)
+      else track.node.quaternion.copy(track.bind).slerp(target, blend)
     }
   }
 
