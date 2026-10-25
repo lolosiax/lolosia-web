@@ -24,3 +24,25 @@ DataV.GeoAtlas 的边界数据源自高德开放平台，其使用与再分发�
 
 其余第三方代码均通过 pnpm 从 npm registry 解析，不随本仓库分发源码，完整清单与版本锁定见 [`package.json`](package.json) 与 [`pnpm-lock.yaml`](pnpm-lock.yaml)。
 各依赖的许可随其包本身提供；若对外分发**构建产物**（`dist/`），请按各依赖的许可要求保留其版权与许可声明。
+
+## 4. VRChat PhysBone 参数兼容说明
+
+`src/modules/site/character/physbone-solver.ts` 与 `hair-physics.ts` 是一套**独立的 TypeScript 弹簧骨求解器**。
+它沿用 VRChat PhysBone 组件的参数语义（pull / spring / stiffness / gravity / immobile / 角度限制），
+以便直接沿用本项目 Avatar 资产上已经调好的数值，并用 Unity 场景逐帧采样做行为验收。
+
+- 不包含、不链接，也不随本仓库分发 VRChat SDK、UdonSharp 或其他 VRChat 专有代码与二进制；
+- 参数数值来自本项目自己的 Avatar 资产，属于功能性配置；
+- `VRChat`、`PhysBone` 等名称归 VRChat Inc. 所有，此处仅用于说明参数与行为的兼容性；
+  本项目与 VRChat Inc. 无关联，也未获其背书；
+- 上文的 MIT 许可仅覆盖本仓库自身代码，不构成对 VRChat 知识产权或其 SDK 许可条款的任何授权。
+
+模型的来源与分发限制见 [doc/landing-scene.md](doc/landing-scene.md) 的「角色模型」一节；模型文件不入库。
+
+## 5. 角色模型与动画素材
+
+角色模型、烘焙动画、贴图等美术资源**不随本仓库分发**，由部署服务器单独提供：
+
+- 授权与 MIT 无关，按原作者/权利人的条款执行（该 Avatar 适用 VN3 等角色授权协议，具体版本以原始发布页为准）；
+- 仓库与构建产物里只保留加载路径（`public/res/characters/`、`public/res/animations/` 均已在 `.gitignore` 中排除）；
+- 二次分发、商用或改作他用前，请自行确认对应协议的适用范围。

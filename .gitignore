@@ -16,3 +16,5 @@ coverage
 
 # 角色模型体积大且非开源内容，运行时从服务器加载
 public/res/characters/
+# 烘焙动画与模型同属 Avatar 素材，授权与 MIT 无关，也放服务器资源
+public/res/animations/
